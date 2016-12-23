@@ -7,14 +7,14 @@
 // 5. prompt prefix string on the fly
 
 // Setup context
-enum NocliErrors Nocli_Setup(struct *nocli){
+enum NocliErrors Nocli_Setup(struct Nocli *nocli){
     (void)nocli;
     
     return kNocliOK;
 }
 
 // Feed data in
-enum NocliErrors Nocli_Feed(struct *nocli, char *input, size_t length){
+enum NocliErrors Nocli_Feed(struct Nocli *nocli, char *input, size_t length){
     (void)nocli, (void)input, (void)length;
     
     return kNocliOK;
