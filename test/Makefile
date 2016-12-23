@@ -6,7 +6,7 @@ CFLAGS=--std=c99 -Wall -Wextra -Wpedantic $(INC_PARAMS)
 LDFLAGS=
 SOURCES=test.c ../src/nocli.c
 OBJECTS=$(SOURCES:.c=.o)
-EXECUTABLE=test
+EXECUTABLE=test.out
 
 all: $(SOURCES) $(EXECUTABLE)
     
@@ -17,4 +17,4 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	-rm -f *.o ../src/*.o test
+	-rm -f *.o $(INC:%=%/*.o) $(EXECUTABLE)
