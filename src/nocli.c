@@ -77,13 +77,13 @@ static void PromptReset(struct Nocli *nocli){
     struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
     ctx->buffer[0] = '\0';
     
-    nocli->output_stream((void*)"\n", 1);
-    nocli->output_stream((void*)(nocli->prefix_string), strnlen(nocli->prefix_string, 1024));
+    nocli->output_stream("\n", 1);
+    nocli->output_stream((nocli->prefix_string), strnlen(nocli->prefix_string, 1024));
 }
 
 static void ProcessCommand(struct Nocli *nocli, char *command){
     char *argv[NOCLI_MAX_COMMAND_TOKENS];
-    size_t argc = 0;
+    size_t argc = 0, i;
     
     // tokenize
     // TODO handle arguments enclosed in quotes, and escaped quotes
@@ -94,9 +94,19 @@ static void ProcessCommand(struct Nocli *nocli, char *command){
         argv[argc] = strtok(NULL, " ");
     }
 
-    // TODO valid command?
-    (void)nocli;
-    // TODO call it
+    // valid command?
+    for(i=0; i<nocli->command_table_length; i++){
+        if(strcmp(nocli->command_table[i].name, argv[0]) == 0){
+            // call it
+            nocli->command_table[i].function(argc, argv);
+            break;
+        }
+    }
+    
+    // command not found, emit error
+    if(i == nocli->command_table_length){
+        nocli->output_stream(nocli->error_string, strnlen(nocli->error_string, 1024));
+    }
 }
 
 enum NocliErrors Nocli_Init(struct Nocli *nocli){

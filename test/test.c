@@ -11,8 +11,8 @@ void function2(int argc, char **argv){
     printf("[function2] %d\n", argc);
 }
 
-void output(void *data, size_t length){
-    printf("%.*s", (int)length, (char*)data);
+void output(char *data, size_t length){
+    printf("%.*s", (int)length, data);
 }
 
 int main(int argc, char **argv){
@@ -35,6 +35,7 @@ int main(int argc, char **argv){
         .command_table = cmdlist,
         .command_table_length = sizeof(cmdlist)/sizeof(cmdlist[0]),
         .prefix_string = "nocli $ ",
+        .error_string = "error, command not found",
     };
     
     if(Nocli_Init(&nocli_ctx)){

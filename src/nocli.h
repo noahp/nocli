@@ -43,12 +43,13 @@ struct NocliCommand {
     (NOCLI_HISTORY_DEPTH * (NOCLI_MAX_COMMAND_LENGTH + sizeof(void*))))
 struct Nocli {
     // 1. configured prior to setup
-    void (*output_stream)(void *, size_t);    // nocli uses this for stdout
+    void (*output_stream)(char *, size_t);    // nocli uses this for stdout
     const struct NocliCommand *command_table;    // table of commands
     const size_t command_table_length;    // length of command table
     
     // 2. reconfiguratble at runtime
-    const char *prefix_string;    // leading string for prompt (eg "$ ")
+    char *prefix_string;    // leading string for prompt (eg "$ ")
+    char *error_string;    // print this if there's an error
     
     // 3. private context space
     uint8_t private[NOCLI_PRIVATE_CONTEXT_SIZE];
