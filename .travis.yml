@@ -1,0 +1,8 @@
+language: c
+
+compiler:
+  - gcc
+
+before_script: cd test
+
+script: make all && make clean && make test
