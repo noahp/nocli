@@ -3,6 +3,14 @@ language: c
 compiler:
   - gcc
 
-before_script: cd test
+before_script:
+  - uname -a
+  - cd test
 
-script: make all && make clean && make test
+script:
+  - make all
+  - make clean
+  - make test
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

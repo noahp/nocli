@@ -3,7 +3,7 @@ CC=gcc
 INC=../src ../test
 INC_PARAMS=$(INC:%=-I%) 
 CFLAGS=-Os --std=c99 -Wall -Wextra $(INC_PARAMS)
-CPROFFLAGS=-fprofile-arcs -ftest-coverage
+CPROFFLAGS=-coverage
 LDFLAGS=
 SOURCES=../src/nocli.c
 OBJECTS=$(SOURCES:.c=.o)
@@ -21,7 +21,7 @@ test: $(TEST)
 	gcov -bn -o ../src ../src/nocli.c
 
 $(TEST): $(OBJECTS) test.o
-	$(CC) $(LDFLAGS) -fprofile-arcs $^ -o $@
+	$(CC) $(LDFLAGS) -coverage $^ -o $@
 
 # Example executable    
 $(EXAMPLE): $(OBJECTS) example.o
