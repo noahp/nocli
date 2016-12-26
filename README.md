@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/noahp/nocli.svg?branch=master)](https://travis-ci.org/noahp/nocli)
 # no-cli
 Cheesy command line interpreter designed for tiny memory-constrained systems.
 Minimal dependencies: just string.h.
