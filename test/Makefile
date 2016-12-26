@@ -2,7 +2,7 @@
 CC=gcc
 INC=../src ../test
 INC_PARAMS=$(INC:%=-I%) 
-CFLAGS=-Os --std=c99 -Wall -Wextra -Wpedantic $(INC_PARAMS)
+CFLAGS=-Os --std=c99 -Wall -Wextra $(INC_PARAMS)
 LDFLAGS=
 SOURCES=../src/nocli.c
 OBJECTS=$(SOURCES:.c=.o)
