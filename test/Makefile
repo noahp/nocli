@@ -3,6 +3,7 @@ CC=gcc
 INC=../src ../test
 INC_PARAMS=$(INC:%=-I%) 
 CFLAGS=-Os --std=c99 -Wall -Wextra $(INC_PARAMS)
+CPROFFLAGS=-fprofile-arcs -ftest-coverage
 LDFLAGS=
 SOURCES=../src/nocli.c
 OBJECTS=$(SOURCES:.c=.o)
@@ -12,11 +13,13 @@ TEST=test.out
 all: $(EXAMPLE)
 
 # Test build and run
+test: CFLAGS+=$(CPROFFLAGS)
 test: $(TEST)
 	./$(TEST)
+	gcov ../src/nocli.c -n
 
 $(TEST): $(OBJECTS) test.o
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $(LDFLAGS) -fprofile-arcs $^ -o $@
 
 # Example executable    
 $(EXAMPLE): $(OBJECTS) example.o
@@ -26,4 +29,4 @@ $(EXAMPLE): $(OBJECTS) example.o
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 clean:
-	-rm -f *.o $(INC:%=%/*.o) $(EXAMPLE) $(TEST)
+	-rm -f $(INC:%=%/*.o) $(INC:%=%/*.gcda) $(INC:%=%/*.gcno) $(INC:%=%/*.gcov) $(EXAMPLE) $(TEST)

@@ -7,6 +7,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#define ERROR_EXIT \
+    printf(">> ERROR at line %d\n", __LINE__);\
+    return -1
+
 #if !defined(MIN)
 #define MIN(a, b) ((a) < (b))?(a):(b)
 #endif
@@ -19,9 +23,6 @@ static void mock_output(char *data, size_t length){
 }
 
 int test_nocli_prompt(void){
-    #define ERROR_EXIT \
-        printf(">> ERROR in test_nocli_prompt line %d\n", __LINE__);\
-        return -1
     // setup
     mock_output_buffer_idx = 0;
     #define PROMPT_1_STRING "nocli$ "

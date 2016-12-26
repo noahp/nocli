@@ -2,3 +2,7 @@
 *.a
 *.exe
 *.out
+
+*.gcda
+*.gcno
+*.gcov
