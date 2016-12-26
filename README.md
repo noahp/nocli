@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/noahp/nocli.svg?branch=master)](https://travis-ci.org/noahp/nocli)
+[![Build Status](https://img.shields.io/travis/noahp/nocli.svg)](https://travis-ci.org/noahp/nocli)
+[![C99](https://img.shields.io/badge/language-C99-blue.svg)](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf)
 # no-cli
 Cheesy command line interpreter designed for tiny memory-constrained systems.
 Minimal dependencies: just string.h.
