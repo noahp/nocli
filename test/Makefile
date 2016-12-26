@@ -16,6 +16,7 @@ all: $(EXAMPLE)
 test: CFLAGS+=$(CPROFFLAGS)
 test: $(TEST)
 	./$(TEST)
+	ls ../src
 	gcov ../src/nocli.gcno -n
 
 $(TEST): $(OBJECTS) test.o
