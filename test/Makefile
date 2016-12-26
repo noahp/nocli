@@ -16,7 +16,7 @@ all: $(EXAMPLE)
 test: CFLAGS+=$(CPROFFLAGS)
 test: $(TEST)
 	./$(TEST)
-	gcov ../src/nocli.c -n
+	gcov ../src/nocli.gcno -n
 
 $(TEST): $(OBJECTS) test.o
 	$(CC) $(LDFLAGS) -fprofile-arcs $^ -o $@
