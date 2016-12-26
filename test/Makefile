@@ -18,7 +18,7 @@ test: $(TEST)
 	./$(TEST)
 	ls ../src
 	gcov --version
-	gcov -bn ../src/nocli.c
+	gcov -bn -o ../src ../src/nocli.c
 
 $(TEST): $(OBJECTS) test.o
 	$(CC) $(LDFLAGS) -fprofile-arcs $^ -o $@
