@@ -17,7 +17,8 @@ test: CFLAGS+=$(CPROFFLAGS)
 test: $(TEST)
 	./$(TEST)
 	ls ../src
-	gcov ../src/nocli.gcno -n
+	gcov --version
+	gcov -bn ../src/nocli.c
 
 $(TEST): $(OBJECTS) test.o
 	$(CC) $(LDFLAGS) -fprofile-arcs $^ -o $@
