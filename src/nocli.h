@@ -21,6 +21,11 @@
 #define NOCLI_ENDLINE ('\n')
 #endif
 
+// Built in help command, enabled by default, set to 0 to disable
+#if !defined(NOCLI_HELP_COMMAND)
+#define NOCLI_HELP_COMMAND (1)
+#endif
+
 // Module error type
 enum NocliErrors {
     kNocliOK = 0,

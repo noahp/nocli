@@ -27,7 +27,6 @@ struct NocliPrivCtx {
 // Size test below.. there's a better way I think
 //char boom[NOCLI_PRIVATE_CONTEXT_SIZE] = {[sizeof(struct NocliPrivCtx) - 1] = 0};
 
-// TODO sub in a custom strnlen
 #if !defined(strnlen)
 size_t
 strnlen(const char *str, size_t maxlen)
@@ -38,6 +37,19 @@ strnlen(const char *str, size_t maxlen)
 		;
 
 	return (size_t)(cp - str);
+}
+#endif
+
+#if !defined(strncmp)
+int
+strncmp(const char *s1, const char *s2, size_t n)
+{
+    for ( ; n > 0; s1++, s2++, --n)
+	if (*s1 != *s2)
+	    return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
+	else if (*s1 == '\0')
+	    return 0;
+    return 0;
 }
 #endif
 
@@ -81,6 +93,20 @@ static void PromptReset(struct Nocli *nocli){
     nocli->output_stream((nocli->prefix_string), strnlen(nocli->prefix_string, 1024));
 }
 
+#if NOCLI_HELP_COMMAND
+static void PrintHelp(struct Nocli *nocli){
+    #define NOCLI_PRINT_COMMAND(name) nocli->output_stream((char*)name, strnlen(name, 1024));\
+        nocli->output_stream("\n", 1);
+    
+    NOCLI_PRINT_COMMAND("?");
+    NOCLI_PRINT_COMMAND("help");
+    
+    for(size_t i=0; i<nocli->command_table_length; i++){
+        NOCLI_PRINT_COMMAND(nocli->command_table[i].name);
+    }
+}
+#endif // NOCLI_HELP_COMMAND
+
 static void ProcessCommand(struct Nocli *nocli, char *command){
     char *argv[NOCLI_MAX_COMMAND_TOKENS];
     size_t argc = 0, i;
@@ -89,17 +115,25 @@ static void ProcessCommand(struct Nocli *nocli, char *command){
     // TODO handle arguments enclosed in quotes, and escaped quotes
     argv[argc] = strtok(command, " ");
     while((argc < (int)(sizeof(argv)/sizeof(argv[0]))) && (argv[argc] != NULL)){
-        printf("%s ", argv[argc]);
         argc++;
         argv[argc] = strtok(NULL, " ");
     }
 
     // valid command?
-    for(i=0; i<nocli->command_table_length; i++){
-        if(strcmp(nocli->command_table[i].name, argv[0]) == 0){
-            // call it
-            nocli->command_table[i].function(argc, argv);
-            break;
+    #if NOCLI_HELP_COMMAND
+    if((strncmp("?", argv[0], 1024) == 0) ||
+       (strncmp("help", argv[0], 1024) == 0)){
+        PrintHelp(nocli);
+    }
+    else
+    #endif
+    {
+        for(i=0; i<nocli->command_table_length; i++){
+            if(strncmp(nocli->command_table[i].name, argv[0], 1024) == 0){
+                // call it
+                nocli->command_table[i].function(argc, argv);
+                break;
+            }
         }
     }
     
