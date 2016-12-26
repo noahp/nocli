@@ -1,16 +1,15 @@
 //
 // nocli.c
-// 
+//
 // Basic command-line interpreter. See nocli.h for how to use it!
-// 
+//
 #include <string.h>
 #include "nocli.h"
 
-// 1. internal buffers mgment? (pool v byte alloc)
-// 2. feed fxn; incoming data stream
-// 3. register command and callback table
+// 1. <DONE, static array> internal buffers mgment? (pool v byte alloc)
+// 2. <DONE> feed fxn; incoming data stream
+// 3. <DONE> register command and callback table
 // 4. dynamic echo configuration
-// 5. prompt prefix string on the fly
 
 #define NOCLI_HELP_COMMAND_STRING "?"
 
@@ -18,11 +17,11 @@ struct NocliPrivCtx {
     // History buffer is singley-linked-list
     struct History {
         struct History *next;
-        char buffer[NOCLI_MAX_COMMAND_LENGTH];
-    } history[NOCLI_HISTORY_DEPTH];
+        char buffer[NOCLI_CONFIG_MAX_COMMAND_LENGTH];
+    } history[NOCLI_CONFIG_HISTORY_DEPTH];
     
     // Active command buffer
-    char buffer[NOCLI_MAX_COMMAND_LENGTH];
+    char buffer[NOCLI_CONFIG_MAX_COMMAND_LENGTH];
 };
 // Size test below.. there's a better way I think
 //char boom[NOCLI_PRIVATE_CONTEXT_SIZE] = {[sizeof(struct NocliPrivCtx) - 1] = 0};
@@ -93,7 +92,7 @@ static void PromptReset(struct Nocli *nocli){
     nocli->output_stream((nocli->prefix_string), strnlen(nocli->prefix_string, 1024));
 }
 
-#if NOCLI_HELP_COMMAND
+#if NOCLI_CONFIG_HELP_COMMAND
 static void PrintHelp(struct Nocli *nocli){
     #define NOCLI_PRINT_COMMAND(name) nocli->output_stream((char*)name, strnlen(name, 1024));\
         nocli->output_stream("\n", 1);
@@ -108,8 +107,8 @@ static void PrintHelp(struct Nocli *nocli){
 #endif // NOCLI_HELP_COMMAND
 
 static void ProcessCommand(struct Nocli *nocli, char *command){
-    char *argv[NOCLI_MAX_COMMAND_TOKENS];
-    size_t argc = 0, i;
+    char *argv[NOCLI_CONFIG_MAX_COMMAND_TOKENS];
+    size_t argc = 0, i = 0;
     
     // tokenize
     // TODO handle arguments enclosed in quotes, and escaped quotes
@@ -120,7 +119,7 @@ static void ProcessCommand(struct Nocli *nocli, char *command){
     }
 
     // valid command?
-    #if NOCLI_HELP_COMMAND
+    #if NOCLI_CONFIG_HELP_COMMAND
     if((strncmp("?", argv[0], 1024) == 0) ||
        (strncmp("help", argv[0], 1024) == 0)){
         PrintHelp(nocli);
@@ -158,21 +157,45 @@ enum NocliErrors Nocli_Feed(struct Nocli *nocli, char *input, size_t length){
     // process incoming data
     size_t buffer_used = strnlen(ctx->buffer, 1024);
     size_t buffer_space = sizeof(ctx->buffer) - 1 - buffer_used;
-    while((length > 0) && (buffer_space > 0)){
-        // if line end reached, process command
-        if(*input == NOCLI_ENDLINE){
-            ProcessCommand(nocli, ctx->buffer);
-            PromptReset(nocli);
-            buffer_used = 0;
-            buffer_space = sizeof(ctx->buffer) - 1;
-            input++;
+    while(length > 0){
+        bool echo = false;
+
+        switch(*input){
+            case NOCLI_CONFIG_ENDLINE:
+                // line end reached, process command
+                if(buffer_used > 0){
+                    ProcessCommand(nocli, ctx->buffer);
+                }
+                PromptReset(nocli);
+                buffer_used = 0;
+                buffer_space = sizeof(ctx->buffer) - 1;
+                break;
+                
+            case '\b':
+                // backspace decrements to prompt
+                if(buffer_used > 0){
+                    echo = true;
+                    ctx->buffer[buffer_used--] = '\0';
+                    buffer_space++;
+                }
+                
+            default:
+                if(buffer_space > 0){
+                    echo = true;
+                    ctx->buffer[buffer_used++] = *input;
+                    ctx->buffer[buffer_used] = '\0';
+                    buffer_space--;
+                }
+                break;
         }
-        else{
-            ctx->buffer[buffer_used++] = *input++;
-            ctx->buffer[buffer_used] = '\0';
-            buffer_space--;
+        
+        // echo is enabled and this byte should be echoed
+        if(echo && nocli->echo_on){
+            nocli->output_stream(input, 1);
         }
 
+        // advance to next input byte
+        input++;
         length--;
     }
 

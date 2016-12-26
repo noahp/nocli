@@ -1,9 +1,9 @@
 # no-cli
-Cheesy command line interpreter designed for tiny memory-contrained systems.
-Minimal dependencies.
+Cheesy command line interpreter designed for tiny memory-constrained systems.
+Minimal dependencies: just string.h.
 
 # Features
-* tiny footprint- <1k code under typical optimization for Cortex-M, a usual configuration is <500 bytes ram
+* tiny footprint- ~1k code/~0.5k ram under typical configuration for Cortex-M
 * incremental parsing of input stream
 * static memory usage
 * TODO configurable history

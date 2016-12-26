@@ -1,20 +1,29 @@
 # Build the test program
 CC=gcc
-INC=../src
+INC=../src ../test
 INC_PARAMS=$(INC:%=-I%) 
-CFLAGS=--std=c99 -Wall -Wextra -Wpedantic $(INC_PARAMS)
+CFLAGS=-Os --std=c99 -Wall -Wextra -Wpedantic $(INC_PARAMS)
 LDFLAGS=
-SOURCES=test.c ../src/nocli.c
+SOURCES=../src/nocli.c
 OBJECTS=$(SOURCES:.c=.o)
-EXECUTABLE=test.out
+EXAMPLE=example.out
+TEST=test.out
 
-all: $(SOURCES) $(EXECUTABLE)
-    
-$(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+all: $(EXAMPLE)
 
-.o:
-	$(CC) $(CFLAGS) $< -o $@
+# Test build and run
+test: $(TEST)
+	./$(TEST)
+
+$(TEST): $(OBJECTS) test.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
+# Example executable    
+$(EXAMPLE): $(OBJECTS) example.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
+.o: %.o:%.c
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 clean:
-	-rm -f *.o $(INC:%=%/*.o) $(EXECUTABLE)
+	-rm -f *.o $(INC:%=%/*.o) $(EXAMPLE) $(TEST)
