@@ -8,3 +8,6 @@ Minimal dependencies.
 * static memory usage
 * TODO configurable history
 * TODO optional tab completion
+
+# License
+WTFPL (http://www.wtfpl.net/) or public domain, whichever you prefer.
