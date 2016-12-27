@@ -52,7 +52,7 @@ strncmp(const char *s1, const char *s2, size_t n)
 }
 #endif
 
-#if !defined(strsep)
+#if 0// TODO use strsep // !defined(strsep)
 char *
 strsep(stringp, delim)
 	char **stringp;
@@ -94,8 +94,8 @@ static void PromptReset(struct Nocli *nocli){
 
 #if NOCLI_CONFIG_HELP_COMMAND
 static void PrintHelp(struct Nocli *nocli){
-    #define NOCLI_PRINT_COMMAND(name) nocli->output_stream((char*)name, strnlen(name, 1024));\
-        nocli->output_stream("\n", 1);
+    #define NOCLI_PRINT_COMMAND(name) nocli->output_stream("\n", 1);\
+        nocli->output_stream((char*)name, strnlen(name, 1024));
     
     NOCLI_PRINT_COMMAND("?");
     NOCLI_PRINT_COMMAND("help");
@@ -137,7 +137,7 @@ static void ProcessCommand(struct Nocli *nocli, char *command){
     }
     
     // command not found, emit error
-    if(i == nocli->command_table_length){
+    if((i > 0) && (i == nocli->command_table_length)){
         nocli->output_stream("\n", 1);
         nocli->output_stream(nocli->error_string, strnlen(nocli->error_string, 1024));
     }
@@ -176,9 +176,10 @@ enum NocliErrors Nocli_Feed(struct Nocli *nocli, char *input, size_t length){
                 // backspace decrements to prompt
                 if(buffer_used > 0){
                     echo = true;
-                    ctx->buffer[buffer_used--] = '\0';
+                    ctx->buffer[--buffer_used] = '\0';
                     buffer_space++;
                 }
+                break;
                 
             default:
                 if(buffer_space > 0){

@@ -126,8 +126,48 @@ static int test_command_call(void){
     return 0;
 }
 
+static int test_help(void){
+    // setup
+    mock_output_buffer_idx = 0;
+    static struct NocliCommand commands[] = {
+        {
+            .name = "function1",
+            .function = function1,
+        }
+    };
+    static struct Nocli nocli_ctx = {
+        .output_stream = mock_output,
+        .command_table = commands,
+        .command_table_length = sizeof(commands)/sizeof(commands[0]),
+        .prefix_string = "nocli $",
+        .error_string = "error, command not found",
+        .echo_on = true,
+    };
+
+    if(Nocli_Init(&nocli_ctx)){
+        ERROR_EXIT;
+    }
+    if(Nocli_Feed(&nocli_ctx, "?\b?\n", sizeof("?\b?\n") - 1)){
+        ERROR_EXIT;
+    }
+
+    // check result
+    if(mock_output_buffer_idx != sizeof("\nnocli $?\b?\n?\nhelp\nfunction1\nnocli $") - 1){
+        printf("%d %.*s\n", (int)mock_output_buffer_idx, (int)mock_output_buffer_idx, mock_output_buffer);
+        ERROR_EXIT;
+    }
+    if(memcmp(mock_output_buffer, "\nnocli $?\b?\n?\nhelp\nfunction1\nnocli $", mock_output_buffer_idx) != 0){
+        printf("%.*s\n", (int)mock_output_buffer_idx, mock_output_buffer);
+        ERROR_EXIT;
+    }
+
+    return 0;
+}
+
 int main(int argc, char **argv){
     (void)argc, (void)argv;
 
-    return (test_nocli_prompt() || test_command_call())?(-1):(0);
+    return (test_nocli_prompt() ||
+            test_command_call() ||
+            test_help())?(-1):(0);
 }
