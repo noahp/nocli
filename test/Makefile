@@ -20,6 +20,8 @@ test: $(TEST)
 	ls ../src
 	gcov --version
 	gcov -o ../src ../src/nocli.c
+	# wipe out test coverage for test itself
+	-rm -f test.gcda test.gcno
 
 $(TEST): $(OBJECTS) test.o
 	$(CC) $(LDFLAGS) -coverage $^ -o $@
