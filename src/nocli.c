@@ -88,13 +88,13 @@ static void PromptReset(struct Nocli *nocli){
     struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
     ctx->buffer[0] = '\0';
     
-    nocli->output_stream("\n", 1);
+    nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING, 1);
     nocli->output_stream((nocli->prefix_string), strnlen(nocli->prefix_string, 1024));
 }
 
 #if NOCLI_CONFIG_HELP_COMMAND
 static void PrintHelp(struct Nocli *nocli){
-    #define NOCLI_PRINT_COMMAND(name) nocli->output_stream("\n", 1);\
+    #define NOCLI_PRINT_COMMAND(name) nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING, 1);\
         nocli->output_stream((char*)name, strnlen(name, 1024));
     
     NOCLI_PRINT_COMMAND("?");
@@ -138,7 +138,7 @@ static void ProcessCommand(struct Nocli *nocli, char *command){
     
     // command not found, emit error
     if((i > 0) && (i == nocli->command_table_length)){
-        nocli->output_stream("\n", 1);
+        nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING, 1);
         nocli->output_stream(nocli->error_string, strnlen(nocli->error_string, 1024));
     }
 }
@@ -162,7 +162,7 @@ enum NocliErrors Nocli_Feed(struct Nocli *nocli, char *input, size_t length){
         bool echo = false;
 
         switch(*input){
-            case NOCLI_CONFIG_ENDLINE:
+            case '\n':
                 // line end reached, process command
                 if(buffer_used > 0){
                     ProcessCommand(nocli, ctx->buffer);

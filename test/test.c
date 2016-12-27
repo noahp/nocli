@@ -27,7 +27,7 @@ int test_nocli_prompt(void){
     mock_output_buffer_idx = 0;
     #define PROMPT_1_STRING "nocli$ "
     #define PROMPT_2_STRING "prompty!"
-    static struct Nocli nocli_ctx = {
+    struct Nocli nocli_ctx = {
         .output_stream = mock_output,
         .command_table = NULL,
         .command_table_length = 0,
@@ -76,13 +76,13 @@ static int test_command_call(void){
     // setup
     mock_output_buffer_idx = 0;
     function1_iscalled = false;
-    static struct NocliCommand commands[] = {
+    struct NocliCommand commands[] = {
         {
             .name = "function1",
             .function = function1,
         }
     };
-    static struct Nocli nocli_ctx = {
+    struct Nocli nocli_ctx = {
         .output_stream = mock_output,
         .command_table = commands,
         .command_table_length = sizeof(commands)/sizeof(commands[0]),
@@ -129,13 +129,13 @@ static int test_command_call(void){
 static int test_help(void){
     // setup
     mock_output_buffer_idx = 0;
-    static struct NocliCommand commands[] = {
+    struct NocliCommand commands[] = {
         {
             .name = "function1",
             .function = function1,
         }
     };
-    static struct Nocli nocli_ctx = {
+    struct Nocli nocli_ctx = {
         .output_stream = mock_output,
         .command_table = commands,
         .command_table_length = sizeof(commands)/sizeof(commands[0]),
@@ -147,11 +147,13 @@ static int test_help(void){
     if(Nocli_Init(&nocli_ctx)){
         ERROR_EXIT;
     }
-    if(Nocli_Feed(&nocli_ctx, "?\b?\n", sizeof("?\b?\n") - 1)){
+    // test entering '?' command, with multiple backspaces; we should only get backspaces until the
+    // active buffer is blank
+    if(Nocli_Feed(&nocli_ctx, "?\b\b?\n", sizeof("?\b\b?\n") - 1)){
         ERROR_EXIT;
     }
 
-    // check result
+    // check result- help string
     if(mock_output_buffer_idx != sizeof("\nnocli $?\b?\n?\nhelp\nfunction1\nnocli $") - 1){
         printf("%d %.*s\n", (int)mock_output_buffer_idx, (int)mock_output_buffer_idx, mock_output_buffer);
         ERROR_EXIT;

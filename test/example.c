@@ -8,7 +8,7 @@
 
 void function1(int argc, char **argv){
     (void)argv;
-    printf("[function1] %d\n", argc);
+    printf("[Executing function1] %d\n", argc);
     for(int i=0; i<argc; i++){
         printf("%s ", argv[i]);
     }
@@ -16,7 +16,7 @@ void function1(int argc, char **argv){
 
 void function2(int argc, char **argv){
     (void)argv;
-    printf("[function2] %d\n", argc);
+    printf("[Executing function2] %d\n", argc);
 }
 
 void output(char *data, size_t length){
@@ -51,7 +51,9 @@ int main(int argc, char **argv){
         return -1;
     }
     
-    // feed characters from getchar. capture ctrl-c
+    // feed characters from getchar. capture ctrl-c.
+    // turn off input buffering
+    setvbuf(stdin, NULL, _IONBF, 0);
     while((ch = getchar()) != 3){
         Nocli_Feed(&nocli_ctx, &ch, sizeof(ch));
     }    

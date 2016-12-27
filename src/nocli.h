@@ -31,9 +31,9 @@
 #define NOCLI_CONFIG_MAX_COMMAND_TOKENS (10)
 #endif
 
-// Single character endline
-#if !defined(NOCLI_CONFIG_ENDLINE)
-#define NOCLI_CONFIG_ENDLINE ('\n')
+// Commands are always terminated by LF, '\n'. Output line end can be configured here
+#if !defined(NOCLI_CONFIG_ENDLINE_STRING)
+#define NOCLI_CONFIG_ENDLINE_STRING ("\n")
 #endif
 
 // Built in help command, enabled by default, set to 0 to disable

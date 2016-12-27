@@ -30,7 +30,7 @@ $(TEST): $(OBJECTS) test.o
 $(EXAMPLE): $(OBJECTS) example.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
-.o: %.o:%.c
+.o: %.c %.h
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 clean:
