@@ -66,13 +66,68 @@ int test_nocli_prompt(void){
     return 0;
 }
 
-int main(int argc, char **argv){
+static bool function1_iscalled = false;
+static void function1(int argc, char** argv){
     (void)argc, (void)argv;
+    function1_iscalled = true;
+}
+
+static int test_command_call(void){
+    // setup
+    mock_output_buffer_idx = 0;
+    function1_iscalled = false;
+    static struct NocliCommand commands[] = {
+        {
+            .name = "function1",
+            .function = function1,
+        }
+    };
+    static struct Nocli nocli_ctx = {
+        .output_stream = mock_output,
+        .command_table = commands,
+        .command_table_length = sizeof(commands)/sizeof(commands[0]),
+        .prefix_string = "nocli $",
+        .error_string = "error, command not found",
+        .echo_on = true,
+    };
+
+    if(Nocli_Init(&nocli_ctx)){
+        ERROR_EXIT;
+    }
+
+    // feed invalid command, check output
+    #define BAD_COMMAND_STRING "badcommand arg1 arg2\n"
+    if(Nocli_Feed(&nocli_ctx, BAD_COMMAND_STRING, sizeof(BAD_COMMAND_STRING) - 1)){
+        ERROR_EXIT;
+    }
+    if(mock_output_buffer_idx != sizeof("\nnocli $" BAD_COMMAND_STRING "error, command not found\nnocli $") - 1){
+        ERROR_EXIT;
+    }
+    if(memcmp(mock_output_buffer, "\nnocli $" BAD_COMMAND_STRING "error, command not found\nnocli $",
+           mock_output_buffer_idx) != 0){
+        ERROR_EXIT;
+    }
     
-    int result = test_nocli_prompt();
-    if(result != 0){
-        return result;
+    // valid command, check output and command executed
+    mock_output_buffer_idx = 0;
+    if(Nocli_Feed(&nocli_ctx, "function1 arg1\n", sizeof("function1 arg1\n"))){
+        ERROR_EXIT;
+    }
+    if(mock_output_buffer_idx != sizeof("function1 arg1\nnocli $")){
+        ERROR_EXIT;
+    }
+    if(memcmp(mock_output_buffer, "function1 arg1\nnocli $", mock_output_buffer_idx) != 0){
+        ERROR_EXIT;
+    }
+    if(function1_iscalled == false){
+        ERROR_EXIT;
     }
 
     return 0;
+}
+
+int main(int argc, char **argv){
+    (void)argc, (void)argv;
+
+    return (test_nocli_prompt() || test_command_call())?(-1):(0);
 }

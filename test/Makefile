@@ -1,4 +1,5 @@
-# Build the test program
+# Build the example or test binaries.
+# Test run uses gcov for coverage
 CC=gcc
 INC=../src ../test
 INC_PARAMS=$(INC:%=-I%) 
@@ -18,7 +19,7 @@ test: $(TEST)
 	./$(TEST)
 	ls ../src
 	gcov --version
-	gcov -bn -o ../src ../src/nocli.c
+	gcov -o ../src ../src/nocli.c
 
 $(TEST): $(OBJECTS) test.o
 	$(CC) $(LDFLAGS) -coverage $^ -o $@

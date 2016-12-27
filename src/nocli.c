@@ -138,6 +138,7 @@ static void ProcessCommand(struct Nocli *nocli, char *command){
     
     // command not found, emit error
     if(i == nocli->command_table_length){
+        nocli->output_stream("\n", 1);
         nocli->output_stream(nocli->error_string, strnlen(nocli->error_string, 1024));
     }
 }
