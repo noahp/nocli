@@ -4,7 +4,17 @@ CC ?= gcc
 GCOV ?= gcov
 INC = ../src ../test
 INC_PARAMS = $(INC:%=-I%)
-CFLAGS += -Os -ggdb3 --std=c99 -Wall -Wextra $(INC_PARAMS) -fsanitize=address -fsanitize=undefined
+CFLAGS += \
+  -Os \
+  -ggdb3 \
+  --std=c99 \
+  -Wall \
+  -Wextra \
+  -Werror \
+  $(INC_PARAMS) \
+  -fsanitize=address \
+  -fsanitize=undefined \
+
 CPROFFLAGS = -coverage
 LDFLAGS +=
 SOURCES = ../src/nocli.c

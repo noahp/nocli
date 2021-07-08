@@ -3,6 +3,8 @@
 //
 // Basic command-line interpreter. See nocli.h for how to use it!
 //
+
+// We need to set this flag to get strtok_r
 #define _POSIX_SOURCE 1
 
 #include "nocli.h"
