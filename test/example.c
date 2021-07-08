@@ -19,7 +19,7 @@ static void function2(int argc, char **argv) {
   printf("[Executing function2] %d\n", argc);
 }
 
-static void output(char *data, size_t length) {
+static void output(const char *data, size_t length) {
   printf("%.*s", (int)length, data);
 }
 
