@@ -25,7 +25,7 @@ docker run --rm -v "$(pwd)":/mnt/workspace -t "$DOCKER_IMAGE_NAME" bash -c '
     set -o pipefail
 
     # commit checker
-    #pre-commit run --all-files
+    pre-commit run --all-files
 
     # compilation + unit tests
     git clean -dxf
