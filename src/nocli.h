@@ -44,7 +44,9 @@
 struct NocliCommand {
   const char *name;                        // command name string, eg "cd"
   void (*function)(int argc, char **argv); // command function
-  const char *help;                        // help string
+#if NOCLI_CONFIG_HELP_COMMAND
+  const char *help; // help string
+#endif
 };
 
 // Nocli context, intantiated by calling code. All the memory used by nocli

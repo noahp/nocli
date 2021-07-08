@@ -32,12 +32,16 @@ int main(int argc, char **argv) {
       {
           .name = "function1",
           .function = function1,
+#if NOCLI_CONFIG_HELP_COMMAND
           .help = "Run function 1",
+#endif
       },
       {
           .name = "function2",
           .function = function2,
+#if NOCLI_CONFIG_HELP_COMMAND
           .help = "Run function 2",
+#endif
       },
   };
   static struct NocliPrivate nocli_private;
@@ -55,7 +59,7 @@ int main(int argc, char **argv) {
   // feed characters from getchar. capture ctrl-c.
   // turn off input buffering
   setvbuf(stdin, NULL, _IONBF, 0);
-  while ((ch = getchar()) != 3) {
+  while ((ch = (char)getchar()) != 3) {
     Nocli_Feed(&nocli_ctx, &ch, sizeof(ch));
   }
 

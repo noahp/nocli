@@ -94,6 +94,9 @@ static int test_command_call(void) {
 
   Nocli_Init(&nocli_ctx);
 
+  // test zero passed data
+  Nocli_Feed(&nocli_ctx, NULL, 0);
+
 // feed invalid command, check output
 #define BAD_COMMAND_STRING "badcommand arg1 arg2"
 #define BAD_COMMAND_RESPONSE_STRING                                            \

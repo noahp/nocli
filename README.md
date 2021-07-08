@@ -12,7 +12,22 @@ Minimal dependencies: just string.h.
 
 ## Features
 
-* tiny footprint- ~1k code/~0.5k ram under typical configuration for Cortex-M
+* tiny footprint; the library is ~500 bytes `.text` (~350 with help disabled),
+  and uses a (configurable) 128 byte buffer (`.bss`) and 24 byte (`.data`)
+  context structure. a minimal integration could be similar to the example
+  application, which clocks in at:
+
+   ```bash
+    ❯ make -f test/Makefile_cortexm4.mk
+    Compiling src/nocli.c
+    Compiling test/example.c
+    Linking build/libnocli_example.a
+    text    data     bss     dec     hex filename
+        511       0       0     511     1ff nocli.o (ex build/libnocli_example.a)
+        283      24     128     435     1b3 example.o (ex build/libnocli_example.a)
+        794      24     128     946     3b2 (TOTALS)
+   ```
+
 * incremental parsing of input stream
 * static memory usage
 * TODO optional tab completion

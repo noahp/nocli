@@ -40,37 +40,6 @@ static size_t strnlen(const char *str, size_t maxlen) {
 }
 #endif
 
-#if 0 // TODO use strsep // !defined(strsep)
-char *
-strsep(stringp, delim)
-    char **stringp;
-    const char *delim;
-{
-    char *s;
-    const char *spanp;
-    int c, sc;
-    char *tok;
-
-    if ((s = *stringp) == NULL)
-        return (NULL);
-    for (tok = s;;) {
-        c = *s++;
-        spanp = delim;
-        do {
-            if ((sc = *spanp++) == c) {
-                if (c == 0)
-                    s = NULL;
-                else
-                    s[-1] = 0;
-                *stringp = s;
-                return (tok);
-            }
-        } while (sc != 0);
-    }
-    /* NOTREACHED */
-}
-#endif
-
 // Reset active buffer and print configured prompt
 static void PromptReset(struct Nocli *nocli) {
   struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
@@ -141,10 +110,6 @@ static void ProcessCommand(struct Nocli *nocli, char *command) {
 void Nocli_Init(struct Nocli *nocli) { PromptReset(nocli); }
 
 void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
-  if (length == 0) {
-    return;
-  }
-
   struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
   char *const buffer = ctx->buffer;
   char *buffer_ptr = buffer + strnlen(buffer, 1024);

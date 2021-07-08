@@ -25,18 +25,18 @@ docker run --rm -v "$(pwd)":/mnt/workspace -t "$DOCKER_IMAGE_NAME" bash -c '
     set -o pipefail
 
     # commit checker
-    pre-commit run --all-files
+    pre-commit run --all-files --verbose
 
     # compilation + unit tests
     git clean -dxf
-    make -C test all
-    make -C test clean
-    make -C test test
+    make -f test/Makefile
+    make -f test/Makefile clean
+    make -f test/Makefile test
     git clean -dxf
-    make -C test -f Makefile_cortexm4.mk
+    make -f test/Makefile_cortexm4.mk
     git clean -dxf
-    CFLAGS="-DNOCLI_CONFIG_HELP_COMMAND=0" make -C test -f Makefile_cortexm4.mk
+    CFLAGS="-DNOCLI_CONFIG_HELP_COMMAND=0" make -f test/Makefile_cortexm4.mk
     git clean -dxf
-    CFLAGS="-Weverything -Wno-error=reserved-id-macro -Wno-error=padded" CC=clang-12 GCOV="llvm-cov-12 gcov" make -C test test
+    CFLAGS="-Weverything -Wno-error=reserved-id-macro -Wno-error=padded" CC=clang-12 NO_LCOV=1 make -f test/Makefile
     git clean -dxf
 '

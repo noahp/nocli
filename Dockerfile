@@ -9,6 +9,7 @@ RUN apt-get update && apt-get -y install \
     clang-format \
     clang-tidy-12 \
     git \
+    lcov \
     lld-12 \
     llvm-12 \
     pv \
