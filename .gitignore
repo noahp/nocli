@@ -2,6 +2,7 @@
 *.a
 *.exe
 *.out
+*.size
 
 *.gcda
 *.gcno

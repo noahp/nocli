@@ -3,8 +3,11 @@
 //
 // Basic command-line interpreter. See nocli.h for how to use it!
 //
-#include <string.h>
+#define _POSIX_SOURCE 1
+
 #include "nocli.h"
+
+#include <string.h>
 
 // 1. <DONE, static array> internal buffers mgment? (pool v byte alloc)
 // 2. <DONE> feed fxn; incoming data stream
@@ -14,46 +17,28 @@
 #define NOCLI_HELP_COMMAND_STRING "?"
 #define NOCLI_PRINTABLE_CHAR(c) ((c > 31) && (c < 127))
 
-struct NocliPrivCtx {
-    // History buffer is singley-linked-list
-    struct History {
-        struct History *next;
-        char buffer[NOCLI_CONFIG_MAX_COMMAND_LENGTH];
-    } history[NOCLI_CONFIG_HISTORY_DEPTH];
+#define ARRAY_SIZE(obj_) (sizeof(obj_) / sizeof(*obj_))
 
-    // Active command buffer
-    char buffer[NOCLI_CONFIG_MAX_COMMAND_LENGTH];
+struct NocliPrivCtx {
+  // Active command buffer
+  char buffer[NOCLI_CONFIG_MAX_COMMAND_LENGTH];
 };
 // Size test below.. there's a better way I think
-//char boom[NOCLI_PRIVATE_CONTEXT_SIZE] = {[sizeof(struct NocliPrivCtx) - 1] = 0};
+// char boom[NOCLI_PRIVATE_CONTEXT_SIZE] = {[sizeof(struct NocliPrivCtx) - 1] =
+// 0};
 
 #if !defined(strnlen)
-size_t
-strnlen(const char *str, size_t maxlen)
-{
-    const char *cp;
+size_t strnlen(const char *str, size_t maxlen) {
+  const char *cp;
 
-    for (cp = str; maxlen != 0 && *cp != '\0'; cp++, maxlen--)
-        ;
+  for (cp = str; maxlen != 0 && *cp != '\0'; cp++, maxlen--)
+    ;
 
-    return (size_t)(cp - str);
+  return (size_t)(cp - str);
 }
 #endif
 
-#if !defined(strncmp)
-int
-strncmp(const char *s1, const char *s2, size_t n)
-{
-    for ( ; n > 0; s1++, s2++, --n)
-    if (*s1 != *s2)
-        return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
-    else if (*s1 == '\0')
-        return 0;
-    return 0;
-}
-#endif
-
-#if 0// TODO use strsep // !defined(strsep)
+#if 0 // TODO use strsep // !defined(strsep)
 char *
 strsep(stringp, delim)
     char **stringp;
@@ -85,127 +70,130 @@ strsep(stringp, delim)
 #endif
 
 // Reset active buffer and print configured prompt
-static void PromptReset(struct Nocli *nocli){
-    struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
-    ctx->buffer[0] = '\0';
+static void PromptReset(struct Nocli *nocli) {
+  struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
+  ctx->buffer[0] = '\0';
 
-    nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING, sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);
-    nocli->output_stream((nocli->prefix_string), strnlen(nocli->prefix_string, 1024));
+  nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,
+                       sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);
+  nocli->output_stream((nocli->prefix_string),
+                       strnlen(nocli->prefix_string, 1024));
 }
 
 #if NOCLI_CONFIG_HELP_COMMAND
-static void PrintHelp(struct Nocli *nocli){
-    #define NOCLI_PRINT_COMMAND(name) nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,\
-        sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);\
-        nocli->output_stream((char*)name, strnlen(name, 1024));
+static void PrintHelp(struct Nocli *nocli) {
+#define NOCLI_PRINT_COMMAND(name)                                              \
+  nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,                            \
+                       sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);               \
+  nocli->output_stream((char *)name, strnlen(name, 1024));
 
-    NOCLI_PRINT_COMMAND("?");
-    NOCLI_PRINT_COMMAND("help");
+  NOCLI_PRINT_COMMAND("?");
+  NOCLI_PRINT_COMMAND("help");
 
-    for(size_t i=0; i<nocli->command_table_length; i++){
-        NOCLI_PRINT_COMMAND(nocli->command_table[i].name);
-    }
+  for (size_t i = 0; i < nocli->command_table_length; i++) {
+    NOCLI_PRINT_COMMAND(nocli->command_table[i].name);
+    nocli->output_stream("\t", strlen("\t"));
+    nocli->output_stream((char *)nocli->command_table[i].help,
+                         strnlen(nocli->command_table[i].help, 1024));
+  }
 }
 #endif // NOCLI_HELP_COMMAND
 
-static void ProcessCommand(struct Nocli *nocli, char *command){
-    char *argv[NOCLI_CONFIG_MAX_COMMAND_TOKENS];
-    size_t argc = 0, i = 0;
+static void ProcessCommand(struct Nocli *nocli, char *command) {
+  char *argv[NOCLI_CONFIG_MAX_COMMAND_TOKENS];
+  size_t argc = 0, i = 0;
 
-    // tokenize
-    // TODO handle arguments enclosed in quotes, and escaped quotes
-    argv[argc] = strtok(command, " ");
-    while((argc < (int)(sizeof(argv)/sizeof(argv[0]))) && (argv[argc] != NULL)){
-        argc++;
-        argv[argc] = strtok(NULL, " ");
-    }
+  // tokenize
+  // TODO handle arguments enclosed in quotes, and escaped quotes
+  char *token;
+  char *rest = command;
 
-    // valid command?
-    #if NOCLI_CONFIG_HELP_COMMAND
-    if((strncmp("?", argv[0], 1024) == 0) ||
-       (strncmp("help", argv[0], 1024) == 0)){
-        PrintHelp(nocli);
-    }
-    else
-    #endif
-    {
-        for(i=0; i<nocli->command_table_length; i++){
-            if(strncmp(nocli->command_table[i].name, argv[0], 1024) == 0){
-                // call it
-                nocli->command_table[i].function(argc, argv);
-                break;
-            }
-        }
-    }
+  while (argc < ARRAY_SIZE(argv) && (token = strtok_r(rest, " ", &rest))) {
+    argv[argc++] = token;
+  }
 
-    // command not found, emit error
-    if((i > 0) && (i == nocli->command_table_length)){
-        nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING, sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);
-        nocli->output_stream(nocli->error_string, strnlen(nocli->error_string, 1024));
+// valid command?
+#if NOCLI_CONFIG_HELP_COMMAND
+  if ((strcmp("?", argv[0]) == 0) || (strcmp("help", argv[0]) == 0)) {
+    PrintHelp(nocli);
+  } else
+#endif
+  {
+    for (i = 0; i < nocli->command_table_length; i++) {
+      if (strcmp(nocli->command_table[i].name, argv[0]) == 0) {
+        // call it
+        nocli->command_table[i].function(argc, argv);
+        break;
+      }
     }
+  }
+
+  // command not found, emit error
+  if ((i > 0) && (i == nocli->command_table_length)) {
+    nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,
+                         sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);
+    nocli->output_stream(nocli->error_string,
+                         strnlen(nocli->error_string, 1024));
+  }
 }
 
-enum NocliErrors Nocli_Init(struct Nocli *nocli){
-    PromptReset(nocli);
+void Nocli_Init(struct Nocli *nocli) { PromptReset(nocli); }
 
-    return kNocliOK;
-}
+void Nocli_Feed(struct Nocli *nocli, char *input, size_t length) {
+  if (length == 0) {
+    return;
+  }
 
-enum NocliErrors Nocli_Feed(struct Nocli *nocli, char *input, size_t length){
-    if(length == 0){
-        return kNocliOK;
-    }
-    struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
+  struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
+  char *buffer = ctx->buffer;
 
-    // process incoming data
-    size_t buffer_used = strnlen(ctx->buffer, 1024);
-    size_t buffer_space = sizeof(ctx->buffer) - 1 - buffer_used;
-    while(length > 0){
-        bool echo = false;
+  // process incoming data
+  const size_t buffer_size = sizeof(ctx->buffer);
+  size_t buffer_used = strnlen(buffer, 1024);
+  size_t buffer_space = buffer_size - 1 - buffer_used;
+  while (length > 0) {
+    bool echo = false;
 
-        switch(*input){
-            case '\n':
-            case '\r':
-                // line end reached, process command
-                if(buffer_used > 0){
-                    ProcessCommand(nocli, ctx->buffer);
-                }
-                PromptReset(nocli);
-                buffer_used = 0;
-                buffer_space = sizeof(ctx->buffer) - 1;
-                break;
+    switch (*input) {
+    case '\n':
+    case '\r':
+      // line end reached, process command
+      if (buffer_used > 0) {
+        ProcessCommand(nocli, buffer);
+      }
+      PromptReset(nocli);
+      buffer_used = 0;
+      buffer_space = buffer_size - 1;
+      break;
 
-            case '\b':
-            // some terminals will map backspace to delete, 127
-            case 127:
-                // backspace decrements to prompt
-                if(buffer_used > 0){
-                    echo = true;
-                    ctx->buffer[--buffer_used] = '\0';
-                    buffer_space++;
-                }
-                break;
+    case '\b':
+    // some terminals will map backspace to delete, 127
+    case 127:
+      // backspace decrements to prompt
+      if (buffer_used > 0) {
+        echo = true;
+        buffer[--buffer_used] = '\0';
+        buffer_space++;
+      }
+      break;
 
-            default:
-                if(NOCLI_PRINTABLE_CHAR(*input) &&
-                   (buffer_space > 0)){
-                    echo = true;
-                    ctx->buffer[buffer_used++] = *input;
-                    ctx->buffer[buffer_used] = '\0';
-                    buffer_space--;
-                }
-                break;
-        }
-
-        // echo is enabled and this byte should be echoed
-        if(echo && nocli->echo_on){
-            nocli->output_stream(input, 1);
-        }
-
-        // advance to next input byte
-        input++;
-        length--;
+    default:
+      if (NOCLI_PRINTABLE_CHAR(*input) && (buffer_space > 0)) {
+        echo = true;
+        buffer[buffer_used++] = *input;
+        buffer[buffer_used] = '\0';
+        buffer_space--;
+      }
+      break;
     }
 
-    return kNocliOK;
+    // echo is enabled and this byte should be echoed
+    if (echo && nocli->echo_on) {
+      nocli->output_stream(input, 1);
+    }
+
+    // advance to next input byte
+    input++;
+    length--;
+  }
 }

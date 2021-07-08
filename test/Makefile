@@ -2,7 +2,7 @@
 # Test run uses gcov for coverage
 CC=gcc
 INC=../src ../test
-INC_PARAMS=$(INC:%=-I%) 
+INC_PARAMS=$(INC:%=-I%)
 CFLAGS=-Os --std=c99 -Wall -Wextra $(INC_PARAMS)
 CPROFFLAGS=-coverage
 LDFLAGS=
@@ -25,7 +25,7 @@ test: $(TEST)
 $(TEST): $(OBJECTS) test.o
 	$(CC) $(LDFLAGS) -coverage $^ -o $@
 
-# Example executable    
+# Example executable
 $(EXAMPLE): $(OBJECTS) example.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
