@@ -30,8 +30,6 @@ docker run --rm -v "$(pwd)":/mnt/workspace -t "$DOCKER_IMAGE_NAME" bash -c '
     # compilation + unit tests
     git clean -dxf
     make -f test/Makefile
-    make -f test/Makefile clean
-    make -f test/Makefile test
     git clean -dxf
     make -f test/Makefile_cortexm4.mk
     git clean -dxf
@@ -39,4 +37,5 @@ docker run --rm -v "$(pwd)":/mnt/workspace -t "$DOCKER_IMAGE_NAME" bash -c '
     git clean -dxf
     CFLAGS="-Weverything -Wno-error=reserved-id-macro -Wno-error=padded" CC=clang-12 NO_LCOV=1 make -f test/Makefile
     git clean -dxf
+    make -f test/Makefile test
 '

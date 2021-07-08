@@ -7,7 +7,6 @@
 BUILD_DIR = build
 
 CC ?= gcc
-GCOV ?= gcov
 INC = src test
 INC_PARAMS = $(INC:%=-I%)
 CFLAGS += \
@@ -48,13 +47,12 @@ test: $(TEST)
 # disable intercepting strnlen, since we use our own implementation
 	$(info Running test...)
 	ASAN_OPTIONS=intercept_strnlen=0 ./$(TEST)
-# $(GCOV) -o build/src src/nocli.c
+	(cd build && gcov -o ../build/src ../src/nocli.c)
 ifeq ($(NO_LCOV),0)
-	lcov --gcov-tool $(GCOV) --rc lcov_branch_coverage=1 --directory ./build/src -c \
-		-o build/lcov.info
-	genhtml --branch-coverage --highlight --legend \
-		-o test_coverage -t "coverage" --num-spaces 4 \
-		build/lcov.info -o $(BUILD_DIR)/test_coverage/
+	lcov --rc lcov_branch_coverage=1 --directory ./build/src -c -o build/lcov.info
+	genhtml --branch-coverage --highlight --legend -o test_coverage \
+		-t "coverage" --num-spaces 4 build/lcov.info -o \
+		$(BUILD_DIR)/test_coverage/
 	@echo See coverage output in file://$(abspath $(BUILD_DIR)/test_coverage/index.html)
 endif
 

@@ -11,6 +11,8 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:
       # checkout v2, with recursive submodule update
       - uses: actions/checkout@v2
@@ -19,4 +21,6 @@ jobs:
 
       # build the Docker image we use to run the tests
       - name: ci.sh
-        run: ./ci.sh
+        run: |
+          ./ci.sh
+          bash <(curl -s https://codecov.io/bash)
