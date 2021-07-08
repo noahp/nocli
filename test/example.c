@@ -46,7 +46,6 @@ int main(int argc, char **argv) {
       .command_table = cmdlist,
       .command_table_length = sizeof(cmdlist) / sizeof(cmdlist[0]),
       .prefix_string = "nocli$ ",
-      .error_string = "error, command not found",
       .echo_on = false,
       .private = &nocli_private,
   };

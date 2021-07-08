@@ -16,24 +16,25 @@
 #endif
 static size_t mock_output_buffer_idx = 0;
 static char mock_output_buffer[1024];
-static void mock_output(char *data, size_t length) {
+static void mock_output(const char *data, size_t length) {
   length = MIN(length, sizeof(mock_output_buffer) - mock_output_buffer_idx);
   memcpy(&mock_output_buffer[mock_output_buffer_idx], data, length);
   mock_output_buffer_idx += length;
 }
 
-int test_nocli_prompt(void) {
+static int test_nocli_prompt(void) {
   // setup
   mock_output_buffer_idx = 0;
 #define PROMPT_1_STRING "nocli$ "
 #define PROMPT_2_STRING "prompty!"
+  struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
       .output_stream = mock_output,
       .command_table = NULL,
       .command_table_length = 0,
       .prefix_string = PROMPT_1_STRING,
-      .error_string = "error, command not found",
       .echo_on = true,
+      .private = &nocli_private,
   };
 
   Nocli_Init(&nocli_ctx);
@@ -79,14 +80,16 @@ static int test_command_call(void) {
   struct NocliCommand commands[] = {{
       .name = "function1",
       .function = function1,
+      .help = "function1 help",
   }};
+  struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
       .output_stream = mock_output,
       .command_table = commands,
       .command_table_length = sizeof(commands) / sizeof(commands[0]),
       .prefix_string = "nocli $",
-      .error_string = "error, command not found",
       .echo_on = true,
+      .private = &nocli_private,
   };
 
   Nocli_Init(&nocli_ctx);
@@ -136,14 +139,16 @@ static int test_help(void) {
   struct NocliCommand commands[] = {{
       .name = "function1",
       .function = function1,
+      .help = "function1 help",
   }};
+  struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
       .output_stream = mock_output,
       .command_table = commands,
       .command_table_length = sizeof(commands) / sizeof(commands[0]),
       .prefix_string = "nocli $",
-      .error_string = "error, command not found",
       .echo_on = true,
+      .private = &nocli_private,
   };
 
   Nocli_Init(&nocli_ctx);
@@ -155,8 +160,9 @@ static int test_help(void) {
 #define HELP_RESULT_STRING                                                     \
   NOCLI_CONFIG_ENDLINE_STRING                                                  \
   "nocli $?\b?" NOCLI_CONFIG_ENDLINE_STRING "?" NOCLI_CONFIG_ENDLINE_STRING    \
-  "help" NOCLI_CONFIG_ENDLINE_STRING "function1" NOCLI_CONFIG_ENDLINE_STRING   \
-  "nocli $"
+  "help" NOCLI_CONFIG_ENDLINE_STRING "function1"                               \
+  "\t"                                                                         \
+  "function1 help" NOCLI_CONFIG_ENDLINE_STRING "nocli $"
   if (mock_output_buffer_idx != sizeof(HELP_RESULT_STRING) - 1) {
     printf("%d %.*s\n", (int)mock_output_buffer_idx,
            (int)mock_output_buffer_idx, mock_output_buffer);

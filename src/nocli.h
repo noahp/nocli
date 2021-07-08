@@ -50,9 +50,9 @@ struct NocliCommand {
 // Nocli context, intantiated by calling code. All the memory used by nocli
 // exists here.
 //  Fields are divided into 3 classes:
-//  1. configured prior to setup
-//  2. configured prior to setup; reconfigurable at runtime
-//  3. internally managed; obfuscated block
+//  1. internally managed; obfuscated block
+//  2. configured prior to setup
+//  3. configured prior to setup; reconfigurable at runtime
 
 #define NOCLI_PRIVATE_CONTEXT_SIZE NOCLI_CONFIG_MAX_COMMAND_LENGTH
 struct NocliPrivate {
@@ -60,27 +60,26 @@ struct NocliPrivate {
 };
 
 struct Nocli {
-  // 1. configured prior to setup
-  void (*output_stream)(char *, size_t); // nocli uses this for stdout
+  // 1. private context space
+  struct NocliPrivate *private;
 
-  // 2. reconfiguratble at runtime
+  // 2. configured prior to setup
+  void (*output_stream)(const char *, size_t); // nocli uses this for stdout
+
+  // 3. reconfiguratble at runtime
   const struct NocliCommand *command_table; // table of commands
   const size_t
       command_table_length; // length of command table; must match command table
   char *prefix_string;      // leading string for prompt (eg "$ ")
-  char *error_string;       // print this if there's an error
   bool echo_on;             // enable or disable echo
-
-  // 3. private context space
-  struct NocliPrivate *private;
 };
 
 // Initialize context.
 // Must be called before calling `Nocli_Feed`. Will reset any context state and
 // print prompt.
-void Nocli_Init(struct Nocli *noclie);
+void Nocli_Init(struct Nocli *nocli);
 
 // Feed data in.
 // Passed memory may be modified by nocli, and must remain valid until this
 // function returns.
-void Nocli_Feed(struct Nocli *nocli, char *input, size_t length);
+void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length);

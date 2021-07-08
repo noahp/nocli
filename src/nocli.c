@@ -14,9 +14,9 @@
 // 3. <DONE> register command and callback table
 // 4. dynamic echo configuration
 
-#define NOCLI_HELP_COMMAND_STRING "?"
-#define NOCLI_PRINTABLE_CHAR(c) ((c > 31) && (c < 127))
+#define NOCLI_COMMAND_NOT_FOUND_STRING "error, command not found"
 
+#define NOCLI_PRINTABLE_CHAR(c) ((c > 31) && (c < 127))
 #define ARRAY_SIZE(obj_) (sizeof(obj_) / sizeof(*obj_))
 
 struct NocliPrivCtx {
@@ -28,7 +28,7 @@ struct NocliPrivCtx {
 // 0};
 
 #if !defined(strnlen)
-size_t strnlen(const char *str, size_t maxlen) {
+static size_t strnlen(const char *str, size_t maxlen) {
   const char *cp;
 
   for (cp = str; maxlen != 0 && *cp != '\0'; cp++, maxlen--)
@@ -76,25 +76,25 @@ static void PromptReset(struct Nocli *nocli) {
 
   nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,
                        sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);
-  nocli->output_stream((nocli->prefix_string),
-                       strnlen(nocli->prefix_string, 1024));
+  nocli->output_stream((nocli->prefix_string), strlen(nocli->prefix_string));
 }
 
 #if NOCLI_CONFIG_HELP_COMMAND
 static void PrintHelp(struct Nocli *nocli) {
-#define NOCLI_PRINT_COMMAND(name)                                              \
-  nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,                            \
-                       sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);               \
-  nocli->output_stream((char *)name, strnlen(name, 1024));
-
-  NOCLI_PRINT_COMMAND("?");
-  NOCLI_PRINT_COMMAND("help");
+  nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING
+                       "?" NOCLI_CONFIG_ENDLINE_STRING "help",
+                       strlen(NOCLI_CONFIG_ENDLINE_STRING
+                              "?" NOCLI_CONFIG_ENDLINE_STRING "help"));
 
   for (size_t i = 0; i < nocli->command_table_length; i++) {
-    NOCLI_PRINT_COMMAND(nocli->command_table[i].name);
+    nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,
+                         sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);
+    nocli->output_stream(nocli->command_table[i].name,
+                         strlen(nocli->command_table[i].name));
+
     nocli->output_stream("\t", strlen("\t"));
-    nocli->output_stream((char *)nocli->command_table[i].help,
-                         strnlen(nocli->command_table[i].help, 1024));
+    nocli->output_stream(nocli->command_table[i].help,
+                         strlen(nocli->command_table[i].help));
   }
 }
 #endif // NOCLI_HELP_COMMAND
@@ -122,7 +122,7 @@ static void ProcessCommand(struct Nocli *nocli, char *command) {
     for (i = 0; i < nocli->command_table_length; i++) {
       if (strcmp(nocli->command_table[i].name, argv[0]) == 0) {
         // call it
-        nocli->command_table[i].function(argc, argv);
+        nocli->command_table[i].function((int)argc, argv);
         break;
       }
     }
@@ -130,61 +130,51 @@ static void ProcessCommand(struct Nocli *nocli, char *command) {
 
   // command not found, emit error
   if ((i > 0) && (i == nocli->command_table_length)) {
-    nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,
-                         sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);
-    nocli->output_stream(nocli->error_string,
-                         strnlen(nocli->error_string, 1024));
+    nocli->output_stream(
+        NOCLI_CONFIG_ENDLINE_STRING NOCLI_COMMAND_NOT_FOUND_STRING,
+        strlen(NOCLI_CONFIG_ENDLINE_STRING NOCLI_COMMAND_NOT_FOUND_STRING));
   }
 }
 
 void Nocli_Init(struct Nocli *nocli) { PromptReset(nocli); }
 
-void Nocli_Feed(struct Nocli *nocli, char *input, size_t length) {
+void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
   if (length == 0) {
     return;
   }
 
   struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
-  char *buffer = ctx->buffer;
+  char *const buffer = ctx->buffer;
+  char *buffer_ptr = buffer + strnlen(buffer, 1024);
+  char *const buffer_end = ctx->buffer + sizeof(ctx->buffer) - 1;
 
   // process incoming data
-  const size_t buffer_size = sizeof(ctx->buffer);
-  size_t buffer_used = strnlen(buffer, 1024);
-  size_t buffer_space = buffer_size - 1 - buffer_used;
   while (length > 0) {
     bool echo = false;
 
-    switch (*input) {
-    case '\n':
-    case '\r':
+    char c = *input;
+    if ((c == '\n') || (c == '\r')) {
       // line end reached, process command
-      if (buffer_used > 0) {
+      if (buffer_ptr > buffer) {
         ProcessCommand(nocli, buffer);
       }
       PromptReset(nocli);
-      buffer_used = 0;
-      buffer_space = buffer_size - 1;
-      break;
-
-    case '\b':
+      buffer_ptr = buffer;
+    }
     // some terminals will map backspace to delete, 127
-    case 127:
+    else if ((c == '\b') || (c == 127)) {
       // backspace decrements to prompt
-      if (buffer_used > 0) {
+      if (buffer_ptr > buffer) {
         echo = true;
-        buffer[--buffer_used] = '\0';
-        buffer_space++;
+        *buffer_ptr-- = '\0';
       }
-      break;
-
-    default:
-      if (NOCLI_PRINTABLE_CHAR(*input) && (buffer_space > 0)) {
+    } else {
+      // drop remaining characters if we're at the limit of what we can buffer
+      if (NOCLI_PRINTABLE_CHAR(*input) && (buffer_ptr < buffer_end)) {
         echo = true;
-        buffer[buffer_used++] = *input;
-        buffer[buffer_used] = '\0';
-        buffer_space--;
+        *buffer_ptr++ = *input;
+        *buffer_ptr = '\0';
       }
-      break;
     }
 
     // echo is enabled and this byte should be echoed

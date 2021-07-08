@@ -8,7 +8,7 @@ AR = $(shell $(CC) --print-prog-name=ar)
 SIZE = $(shell $(CC) --print-prog-name=size)
 
 INC = ../src ../test
-CFLAGS = \
+CFLAGS += \
   -Os \
   -mcpu=cortex-m4 \
   -mfloat-abi=hard \
