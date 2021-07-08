@@ -47,7 +47,6 @@ test: $(TEST)
 # disable intercepting strnlen, since we use our own implementation
 	$(info Running test...)
 	ASAN_OPTIONS=intercept_strnlen=0 ./$(TEST)
-	(cd build && gcov -o ../build/src ../src/nocli.c)
 ifeq ($(NO_LCOV),0)
 	lcov --rc lcov_branch_coverage=1 --directory ./build/src -c -o build/lcov.info
 	genhtml --branch-coverage --highlight --legend -o test_coverage \
