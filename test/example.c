@@ -5,6 +5,8 @@
 //
 #include "../src/nocli.h"
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 static void function1(int argc, char **argv) {
   (void)argv;
@@ -24,7 +26,6 @@ static void output(const char *data, size_t length) {
 }
 
 int main(int argc, char **argv) {
-  (void)argc, (void)argv;
   char ch;
 
   // setup context
@@ -56,12 +57,28 @@ int main(int argc, char **argv) {
 
   Nocli_Init(&nocli_ctx);
 
-  // feed characters from getchar. capture ctrl-c.
-  // turn off input buffering
-  setvbuf(stdin, NULL, _IONBF, 0);
-  while ((ch = (char)getchar()) != 3) {
-    Nocli_Feed(&nocli_ctx, &ch, sizeof(ch));
+#if defined(AFL)
+  (void)argc, (void)argv;
+  while (read(STDIN_FILENO, &ch, 1) > 0) {
+    Nocli_Feed(&nocli_ctx, &ch, 1);
   }
+#else
+
+  // if running in non-interactive mode, feed in argv[1]
+  if (argc > 1) {
+    Nocli_Feed(&nocli_ctx, argv[1], strlen(argv[1]));
+    Nocli_Feed(&nocli_ctx, "\n", strlen("\n"));
+  } else {
+    // interactive mode
+
+    // feed characters from getchar. capture ctrl-c.
+    // turn off input buffering
+    setvbuf(stdin, NULL, _IONBF, 0);
+    while ((ch = (char)getchar()) != 3) {
+      Nocli_Feed(&nocli_ctx, &ch, sizeof(ch));
+    }
+  }
+#endif
 
   return 0;
 }
