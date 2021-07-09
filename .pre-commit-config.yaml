@@ -3,12 +3,13 @@
 repos:
   - repo: local
     hooks:
+      # keep this before clang-tidy, it generates compile_commands.json for it
       - id: compiledb
         name: compiledb
         entry: compiledb
         language: system
-        args: [--overwrite, -v, make, -f, test/Makefile, -n]
-        always_run: true
+        args: [--overwrite, make, -f, test/Makefile, -n]
+        files: \.(c|cc|cxx|cpp|h|hpp|hxx|m)$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.4.0
