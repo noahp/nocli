@@ -5,11 +5,12 @@
 //
 #include "nocli.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#define ERROR_EXIT                                                             \
-  printf(">> ERROR at line %d\n", __LINE__);                                   \
-  return -1
+#define ERROR_EXIT(line_)                                                      \
+  printf(">> ERROR at line %d\n", line_);                                      \
+  exit(-1)
 
 #if !defined(MIN)
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
@@ -22,7 +23,27 @@ static void mock_output(const char *data, size_t length) {
   mock_output_buffer_idx += length;
 }
 
-static int test_nocli_prompt(void) {
+#define PRV_COMPARE_MOCK(a_)                                                   \
+  prv_compare_strings(a_, mock_output_buffer, mock_output_buffer_idx, __LINE__)
+static void prv_compare_strings(const char *expected, const char *actual,
+                                size_t actual_length, int line) {
+  bool fail = false;
+  if (actual_length != strlen(expected)) {
+    printf(">>> bad length, expected: %zu / actual: %zu\n", strlen(expected),
+           actual_length);
+    fail = true;
+  } else if (memcmp(expected, actual, actual_length) != 0) {
+    fail = true;
+  }
+
+  if (fail) {
+    printf(">>> expected:\n%s\n<<< actual:\n%.*s\n", expected,
+           (int)actual_length, actual);
+    ERROR_EXIT(line);
+  }
+}
+
+static void test_nocli_prompt(void) {
   // setup
   mock_output_buffer_idx = 0;
 #define PROMPT_1_STRING "nocli$ "
@@ -40,31 +61,13 @@ static int test_nocli_prompt(void) {
   Nocli_Init(&nocli_ctx);
 
   // check result
-  if (mock_output_buffer_idx !=
-      sizeof(NOCLI_CONFIG_ENDLINE_STRING PROMPT_1_STRING) - 1) {
-    ERROR_EXIT;
-  }
-  if (memcmp(mock_output_buffer, NOCLI_CONFIG_ENDLINE_STRING PROMPT_1_STRING,
-             mock_output_buffer_idx) != 0) {
-    printf("%.*s\n", (int)mock_output_buffer_idx, mock_output_buffer);
-    ERROR_EXIT;
-  }
+  PRV_COMPARE_MOCK(NOCLI_CONFIG_ENDLINE_STRING PROMPT_1_STRING);
 
   // modify prompt text, and feed a newline
   mock_output_buffer_idx = 0;
   nocli_ctx.prefix_string = PROMPT_2_STRING;
   Nocli_Feed(&nocli_ctx, "\n", 1);
-  if (mock_output_buffer_idx !=
-      sizeof(NOCLI_CONFIG_ENDLINE_STRING PROMPT_2_STRING) - 1) {
-    ERROR_EXIT;
-  }
-  if (memcmp(mock_output_buffer, NOCLI_CONFIG_ENDLINE_STRING PROMPT_2_STRING,
-             mock_output_buffer_idx) != 0) {
-    printf("%.*s\n", (int)mock_output_buffer_idx, mock_output_buffer);
-    ERROR_EXIT;
-  }
-
-  return 0;
+  PRV_COMPARE_MOCK(NOCLI_CONFIG_ENDLINE_STRING PROMPT_2_STRING);
 }
 
 static bool function1_iscalled = false;
@@ -73,7 +76,7 @@ static void function1(int argc, char **argv) {
   function1_iscalled = true;
 }
 
-static int test_command_call(void) {
+static void test_command_call(void) {
   // setup
   mock_output_buffer_idx = 0;
   function1_iscalled = false;
@@ -98,45 +101,87 @@ static int test_command_call(void) {
   Nocli_Feed(&nocli_ctx, NULL, 0);
 
 // feed invalid command, check output
-#define BAD_COMMAND_STRING "badcommand arg1 arg2"
+#define BAD_COMMAND_STRING                                                     \
+  "badcommand arg1 arg2 "                                                      \
+  "11111111111111111111111111111111111111111111111111111111111111111111111111" \
+  "11111111111111111111111111111111"
 #define BAD_COMMAND_RESPONSE_STRING                                            \
   NOCLI_CONFIG_ENDLINE_STRING                                                  \
   "nocli $" BAD_COMMAND_STRING NOCLI_CONFIG_ENDLINE_STRING                     \
   "error, command not found" NOCLI_CONFIG_ENDLINE_STRING "nocli $"
-  Nocli_Feed(&nocli_ctx, BAD_COMMAND_STRING "\n",
-             sizeof(BAD_COMMAND_STRING "\n") - 1);
-  if (mock_output_buffer_idx != sizeof(BAD_COMMAND_RESPONSE_STRING) - 1) {
-    ERROR_EXIT;
-  }
-  if (memcmp(mock_output_buffer, BAD_COMMAND_RESPONSE_STRING,
-             mock_output_buffer_idx) != 0) {
-    ERROR_EXIT;
-  }
+  // feed an overlong command string, confirm it truncates
+  Nocli_Feed(&nocli_ctx, "\x1f\x80" BAD_COMMAND_STRING "11111111\x1f\x80  \n",
+             sizeof("\x1f\x80" BAD_COMMAND_STRING "11111111\x1f\x80  \n") - 1);
+  PRV_COMPARE_MOCK(BAD_COMMAND_RESPONSE_STRING);
 
 // valid command, check output and command executed
-#define GOOD_COMMAND_STRING "function1 arg1\n"
+#define GOOD_COMMAND_STRING "function1 arg1 \xff 3 4 5 6 7 8 9 10 11 12\n"
 #define GOOD_COMMAND_RESPONSE_STRING                                           \
-  "function1 arg1" NOCLI_CONFIG_ENDLINE_STRING "nocli $"
+  NOCLI_CONFIG_ENDLINE_STRING                                                  \
+  "nocli $"                                                                    \
+  "function1 arg1  3 4 5 6 7 8 9 10 11 12" NOCLI_CONFIG_ENDLINE_STRING         \
+  "nocli $"
   mock_output_buffer_idx = 0;
+  Nocli_Init(&nocli_ctx);
   Nocli_Feed(&nocli_ctx, GOOD_COMMAND_STRING, sizeof(GOOD_COMMAND_STRING) - 1);
-  if (mock_output_buffer_idx != sizeof(GOOD_COMMAND_RESPONSE_STRING) - 1) {
-    printf(">> %zu %zu\n", mock_output_buffer_idx,
-           sizeof(GOOD_COMMAND_RESPONSE_STRING));
-    printf(">> %.*s\n", (int)mock_output_buffer_idx, mock_output_buffer);
-    ERROR_EXIT;
-  }
-  if (memcmp(mock_output_buffer, GOOD_COMMAND_RESPONSE_STRING,
-             mock_output_buffer_idx) != 0) {
-    ERROR_EXIT;
-  }
+  PRV_COMPARE_MOCK(GOOD_COMMAND_RESPONSE_STRING);
   if (function1_iscalled == false) {
-    ERROR_EXIT;
+    ERROR_EXIT(__LINE__);
   }
 
-  return 0;
+  // test with no command table
+  nocli_ctx.command_table_length = 0,
+#define NO_COMMANDS_STRING                                                     \
+  NOCLI_CONFIG_ENDLINE_STRING                                                  \
+  "nocli $" BAD_COMMAND_STRING NOCLI_CONFIG_ENDLINE_STRING "nocli $"
+
+  mock_output_buffer_idx = 0;
+  Nocli_Init(&nocli_ctx);
+  Nocli_Feed(&nocli_ctx, BAD_COMMAND_STRING "\n",
+             sizeof(BAD_COMMAND_STRING "\n") - 1);
+  PRV_COMPARE_MOCK(NO_COMMANDS_STRING);
 }
 
-static int test_help(void) {
+static void test_toggling_echo(void) {
+  struct NocliPrivate nocli_private;
+  struct Nocli nocli_ctx = {
+      .output_stream = mock_output,
+      .command_table = NULL,
+      .command_table_length = 0,
+      .prefix_string = "nocli $",
+      .echo_on = true,
+      .private = &nocli_private,
+  };
+  mock_output_buffer_idx = 0;
+  Nocli_Init(&nocli_ctx);
+  // test entering '?' command, with multiple backspaces; we should only get
+  // backspaces until the active buffer is blank
+  Nocli_Feed(&nocli_ctx, "?\b\b\x7f?\n", strlen("?\b\b\x7f?\n"));
+
+  // check result- help string
+  const char *expecteds[] = {
+      NOCLI_CONFIG_ENDLINE_STRING "nocli $?\b?" NOCLI_CONFIG_ENDLINE_STRING
+                                  "?" NOCLI_CONFIG_ENDLINE_STRING
+                                  "help" NOCLI_CONFIG_ENDLINE_STRING "nocli $",
+      NOCLI_CONFIG_ENDLINE_STRING "nocli $" NOCLI_CONFIG_ENDLINE_STRING
+                                  "?" NOCLI_CONFIG_ENDLINE_STRING
+                                  "help" NOCLI_CONFIG_ENDLINE_STRING "nocli $",
+  };
+
+  PRV_COMPARE_MOCK(expecteds[0]);
+
+  nocli_ctx.echo_on = false;
+  mock_output_buffer_idx = 0;
+  Nocli_Init(&nocli_ctx);
+  // test entering '?' command, with multiple backspaces; we should only get
+  // backspaces until the active buffer is blank
+  Nocli_Feed(&nocli_ctx, "?\b\b?\r", strlen("?\b\b?\r"));
+
+  // check result- help string
+  PRV_COMPARE_MOCK(expecteds[1]);
+}
+
+static void test_help(void) {
   // setup
   mock_output_buffer_idx = 0;
   struct NocliCommand commands[] = {{
@@ -157,7 +202,7 @@ static int test_help(void) {
   Nocli_Init(&nocli_ctx);
   // test entering '?' command, with multiple backspaces; we should only get
   // backspaces until the active buffer is blank
-  Nocli_Feed(&nocli_ctx, "?\b\b?\n", sizeof("?\b\b?\n") - 1);
+  Nocli_Feed(&nocli_ctx, "?\b\b?\n", strlen("?\b\b?\n"));
 
 // check result- help string
 #define HELP_RESULT_STRING                                                     \
@@ -166,23 +211,26 @@ static int test_help(void) {
   "help" NOCLI_CONFIG_ENDLINE_STRING "function1"                               \
   "\t"                                                                         \
   "function1 help" NOCLI_CONFIG_ENDLINE_STRING "nocli $"
-  if (mock_output_buffer_idx != sizeof(HELP_RESULT_STRING) - 1) {
-    printf("%d %.*s\n", (int)mock_output_buffer_idx,
-           (int)mock_output_buffer_idx, mock_output_buffer);
-    ERROR_EXIT;
-  }
-  if (memcmp(mock_output_buffer, HELP_RESULT_STRING, mock_output_buffer_idx) !=
-      0) {
-    printf("%.*s\n", (int)mock_output_buffer_idx, mock_output_buffer);
-    ERROR_EXIT;
-  }
+  PRV_COMPARE_MOCK(HELP_RESULT_STRING);
 
-  return 0;
+  // test 'help' command too
+  mock_output_buffer_idx = 0;
+#define HELP_RESULT_STRING_2                                                   \
+  NOCLI_CONFIG_ENDLINE_STRING                                                  \
+  "nocli $help" NOCLI_CONFIG_ENDLINE_STRING "?" NOCLI_CONFIG_ENDLINE_STRING    \
+  "help" NOCLI_CONFIG_ENDLINE_STRING "function1"                               \
+  "\t"                                                                         \
+  "function1 help" NOCLI_CONFIG_ENDLINE_STRING "nocli $"
+  Nocli_Init(&nocli_ctx);
+  Nocli_Feed(&nocli_ctx, "help\n", strlen("help\n"));
+  PRV_COMPARE_MOCK(HELP_RESULT_STRING_2);
 }
 
 int main(int argc, char **argv) {
   (void)argc, (void)argv;
 
-  return (test_nocli_prompt() || test_command_call() || test_help()) ? (-1)
-                                                                     : (0);
+  test_nocli_prompt();
+  test_command_call();
+  test_toggling_echo();
+  test_help();
 }

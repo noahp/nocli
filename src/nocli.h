@@ -70,7 +70,7 @@ struct Nocli {
 
   // 3. reconfiguratble at runtime
   const struct NocliCommand *command_table; // table of commands
-  const size_t
+  size_t
       command_table_length; // length of command table; must match command table
   char *prefix_string;      // leading string for prompt (eg "$ ")
   bool echo_on;             // enable or disable echo

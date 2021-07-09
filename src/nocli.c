@@ -18,7 +18,8 @@
 
 #define NOCLI_COMMAND_NOT_FOUND_STRING "error, command not found"
 
-#define NOCLI_PRINTABLE_CHAR(c) ((c > 31) && (c < 127))
+// The below check works only if c_ is signed char; 127++ = -128, which is < 31
+#define NOCLI_PRINTABLE_CHAR(c_) (c_ > 31)
 #define ARRAY_SIZE(obj_) (sizeof(obj_) / sizeof(*obj_))
 
 struct NocliPrivCtx {
@@ -28,17 +29,6 @@ struct NocliPrivCtx {
 // Size test below.. there's a better way I think
 // char boom[NOCLI_PRIVATE_CONTEXT_SIZE] = {[sizeof(struct NocliPrivCtx) - 1] =
 // 0};
-
-#if !defined(strnlen)
-static size_t strnlen(const char *str, size_t maxlen) {
-  const char *cp;
-
-  for (cp = str; maxlen != 0 && *cp != '\0'; cp++, maxlen--)
-    ;
-
-  return (size_t)(cp - str);
-}
-#endif
 
 // Reset active buffer and print configured prompt
 static void PromptReset(struct Nocli *nocli) {
@@ -69,10 +59,10 @@ static void PrintHelp(struct Nocli *nocli) {
   }
 }
 #endif // NOCLI_HELP_COMMAND
-
 static void ProcessCommand(struct Nocli *nocli, char *command) {
   char *argv[NOCLI_CONFIG_MAX_COMMAND_TOKENS];
-  size_t argc = 0, i = 0;
+  argv[0] = "";
+  size_t argc = 0;
 
   // tokenize
   // TODO handle arguments enclosed in quotes, and escaped quotes
@@ -87,20 +77,21 @@ static void ProcessCommand(struct Nocli *nocli, char *command) {
 #if NOCLI_CONFIG_HELP_COMMAND
   if ((strcmp("?", argv[0]) == 0) || (strcmp("help", argv[0]) == 0)) {
     PrintHelp(nocli);
+    return;
   } else
 #endif
   {
-    for (i = 0; i < nocli->command_table_length; i++) {
+    for (size_t i = 0; i < nocli->command_table_length; i++) {
       if (strcmp(nocli->command_table[i].name, argv[0]) == 0) {
         // call it
         nocli->command_table[i].function((int)argc, argv);
-        break;
+        return;
       }
     }
   }
 
   // command not found, emit error
-  if ((i > 0) && (i == nocli->command_table_length)) {
+  if (nocli->command_table_length > 0) {
     nocli->output_stream(
         NOCLI_CONFIG_ENDLINE_STRING NOCLI_COMMAND_NOT_FOUND_STRING,
         strlen(NOCLI_CONFIG_ENDLINE_STRING NOCLI_COMMAND_NOT_FOUND_STRING));
@@ -112,7 +103,7 @@ void Nocli_Init(struct Nocli *nocli) { PromptReset(nocli); }
 void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
   struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
   char *const buffer = ctx->buffer;
-  char *buffer_ptr = buffer + strnlen(buffer, 1024);
+  char *buffer_ptr = buffer + strlen(buffer);
   char *const buffer_end = ctx->buffer + sizeof(ctx->buffer) - 1;
 
   // process incoming data
@@ -137,7 +128,7 @@ void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
       }
     } else {
       // drop remaining characters if we're at the limit of what we can buffer
-      if (NOCLI_PRINTABLE_CHAR(*input) && (buffer_ptr < buffer_end)) {
+      if (NOCLI_PRINTABLE_CHAR(c) && (buffer_ptr < buffer_end)) {
         echo = true;
         *buffer_ptr++ = *input;
         *buffer_ptr = '\0';

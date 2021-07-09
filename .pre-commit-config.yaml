@@ -11,6 +11,8 @@ repos:
       - id: check-yaml # This hook checks yaml files for parseable syntax.
       - id: end-of-file-fixer # Ensures that a file is either empty, or ends with one newline.
       - id: pretty-format-json # This hook sets a standard for formatting JSON files.
+        args: [--autofix, --no-ensure-ascii, --no-sort-keys]
+        exclude: compile_commands.json
       - id: trailing-whitespace # This hook trims trailing whitespace.
   - repo: https://github.com/psf/black
     rev: 20.8b1

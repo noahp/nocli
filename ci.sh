@@ -38,4 +38,7 @@ docker run --rm -v "$(pwd)":/mnt/workspace -t "$DOCKER_IMAGE_NAME" bash -c '
     CFLAGS="-Weverything -Wno-error=reserved-id-macro -Wno-error=padded" CC=clang-12 NO_LCOV=1 make -f test/Makefile
     git clean -dxf
     make -f test/Makefile test
+    git clean -dxf
+    # for coverage, disable asan (which inserts extra branches the test does not hit)
+    DISABLE_ASAN=1 make -f test/Makefile test
 '
