@@ -1,6 +1,15 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
+  - repo: local
+    hooks:
+      - id: compiledb
+        name: compiledb
+        entry: compiledb
+        language: system
+        args: [--overwrite, -v, make, -f, test/Makefile, -n]
+        always_run: true
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.4.0
     hooks:
@@ -28,7 +37,7 @@ repos:
       - id: clang-format
         args: [--style=file, -i]
       - id: clang-tidy
-        args: [-checks=clang-diagnostic-return-type, -p=compile_commands.json]
+        args: [-checks=clang-diagnostic-return-type]
       - id: cppcheck
         args:
           [

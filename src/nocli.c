@@ -77,7 +77,6 @@ static void ProcessCommand(struct Nocli *nocli, char *command) {
 #if NOCLI_CONFIG_HELP_COMMAND
   if ((strcmp("?", argv[0]) == 0) || (strcmp("help", argv[0]) == 0)) {
     PrintHelp(nocli);
-    return;
   } else
 #endif
   {
@@ -88,13 +87,13 @@ static void ProcessCommand(struct Nocli *nocli, char *command) {
         return;
       }
     }
-  }
 
-  // command not found, emit error
-  if (nocli->command_table_length > 0) {
-    nocli->output_stream(
-        NOCLI_CONFIG_ENDLINE_STRING NOCLI_COMMAND_NOT_FOUND_STRING,
-        strlen(NOCLI_CONFIG_ENDLINE_STRING NOCLI_COMMAND_NOT_FOUND_STRING));
+    // command not found, emit error
+    if (nocli->command_table_length > 0) {
+      nocli->output_stream(
+          NOCLI_CONFIG_ENDLINE_STRING NOCLI_COMMAND_NOT_FOUND_STRING,
+          strlen(NOCLI_CONFIG_ENDLINE_STRING NOCLI_COMMAND_NOT_FOUND_STRING));
+    }
   }
 }
 

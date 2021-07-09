@@ -6,6 +6,11 @@ ifeq ($(origin CC),default)
 CC := arm-none-eabi-gcc
 endif
 
+CCACHE = $(shell if (which ccache >/dev/null 2>&1); then echo ccache; fi)
+ifeq ($(CCACHE),ccache)
+CC := ccache $(CC)
+endif
+
 AR = $(shell $(CC) --print-prog-name=ar)
 SIZE = $(shell $(CC) --print-prog-name=size)
 
