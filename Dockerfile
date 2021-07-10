@@ -8,6 +8,7 @@ RUN apt-get update && apt-get -y install \
     clang-12 \
     clang-format \
     clang-tidy-12 \
+    gcc-11 \
     git \
     lcov \
     lld-12 \

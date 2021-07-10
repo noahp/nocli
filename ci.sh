@@ -27,13 +27,18 @@ docker run --rm -v "$(pwd)":/mnt/workspace -t "$DOCKER_IMAGE_NAME" bash -c '
     # commit checker
     pre-commit run --all-files --verbose
 
-    # compilation + unit tests
-    git clean -dxf
-    make -f test/Makefile
-    git clean -dxf
-    make -f test/Makefile_cortexm4.mk
+    # build for cortex-m4
     git clean -dxf
     CFLAGS="-DNOCLI_CONFIG_HELP_COMMAND=0" make -f test/Makefile_cortexm4.mk
+    git clean -dxf
+    make -f test/Makefile_cortexm4.mk
+
+    # compilation + unit tests; default is gcc-11
+    export CC=gcc-11
+    export GCOV=gcov-11
+
+    git clean -dxf
+    make -f test/Makefile
     git clean -dxf
     CFLAGS="-Weverything -Wno-error=reserved-id-macro -Wno-error=padded" CC=clang-12 NO_LCOV=1 make -f test/Makefile
     git clean -dxf

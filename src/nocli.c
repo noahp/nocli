@@ -4,23 +4,21 @@
 // Basic command-line interpreter. See nocli.h for how to use it!
 //
 
-// We need to set this flag to get strtok_r
-#define _POSIX_SOURCE 1
-
 #include "nocli.h"
 
 #include <string.h>
-
-// 1. <DONE, static array> internal buffers mgment? (pool v byte alloc)
-// 2. <DONE> feed fxn; incoming data stream
-// 3. <DONE> register command and callback table
-// 4. dynamic echo configuration
 
 #define NOCLI_COMMAND_NOT_FOUND_STRING "error, command not found"
 
 // The below check works only if c_ is signed char; 127++ = -128, which is < 31
 #define NOCLI_PRINTABLE_CHAR(c_) (c_ > 31)
 #define ARRAY_SIZE(obj_) (sizeof(obj_) / sizeof(*obj_))
+
+#if defined(DEBUG)
+#define DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINTF(...)
+#endif
 
 struct NocliPrivCtx {
   // Active command buffer
@@ -59,19 +57,111 @@ static void PrintHelp(struct Nocli *nocli) {
   }
 }
 #endif // NOCLI_HELP_COMMAND
+
+NOCLI_ATTRIBUTE_ACCESS(write_only, 3, 2)
+static int argsplit(char *buffer, int argv_count, char **argv) {
+#if NOCLI_QUOTED_ARGS_SUPPORT
+  char **const argv_start = argv;
+  int argc = 0;
+  int token_started = 0;
+  char open_quote = 0;
+  while (*buffer != '\0') {
+    DEBUG_PRINTF(">> c '%c'\n", *buffer);
+
+    switch (*buffer) {
+    case ' ':
+      if (!open_quote && token_started) {
+        *buffer = '\0';
+        argc++;
+        token_started = 0;
+      } else if (open_quote && !token_started) {
+        // first character after quote open is ' ', start token
+        if ((argv - argv_start) == argv_count) {
+          // no more space for tokens
+          goto done;
+        }
+        *argv++ = buffer;
+        token_started = 1;
+      }
+      break;
+
+    case '\'':
+    case '"':
+      if (open_quote == *buffer) {
+        // current quote closes, slide remaining string one character to the
+        // left, to elide the quote
+        DEBUG_PRINTF(">> close quote '%c'\n", *buffer);
+        open_quote = 0;
+        memmove(buffer, buffer + 1, strlen(buffer) + 1);
+        buffer--;
+      } else if (!open_quote) {
+        DEBUG_PRINTF(">> open quote '%c'\n", *buffer);
+        open_quote = *buffer;
+      } else if (!token_started) {
+        // character after an open quote started token is the other quote type
+        if ((argv - argv_start) == argv_count) {
+          // no more space for tokens
+          goto done;
+        }
+        *argv++ = buffer;
+        token_started = 1;
+      }
+      break;
+
+    default:
+      if (!token_started) {
+        // store next token start
+        if ((argv - argv_start) == argv_count) {
+          // no more space for tokens
+          goto done;
+        }
+        *argv++ = buffer;
+        token_started = 1;
+      }
+
+      break;
+    }
+    buffer++;
+  }
+
+done:
+  if (token_started) {
+    argc++;
+  }
+
+  return argc;
+}
+#else // NOCLI_QUOTED_ARGS_SUPPORT
+  char **const argv_start = argv;
+  int argc = 0;
+  int in_token = 0;
+  while (((argv - argv_start) < argv_count) && (*buffer != '\0')) {
+    if (*buffer == ' ') {
+      if (in_token) {
+        *buffer = '\0';
+        in_token = 0;
+      }
+    } else {
+      if (!in_token) {
+        argc++;
+        *argv++ = buffer;
+        in_token = 1;
+      }
+    }
+
+    buffer++;
+  }
+
+  return argc;
+}
+#endif
+
 static void ProcessCommand(struct Nocli *nocli, char *command) {
   char *argv[NOCLI_CONFIG_MAX_COMMAND_TOKENS];
   argv[0] = "";
-  size_t argc = 0;
 
   // tokenize
-  // TODO handle arguments enclosed in quotes, and escaped quotes
-  char *token;
-  char *rest = command;
-
-  while (argc < ARRAY_SIZE(argv) && (token = strtok_r(rest, " ", &rest))) {
-    argv[argc++] = token;
-  }
+  int argc = argsplit(command, ARRAY_SIZE(argv), argv);
 
 // valid command?
 #if NOCLI_CONFIG_HELP_COMMAND
@@ -99,6 +189,7 @@ static void ProcessCommand(struct Nocli *nocli, char *command) {
 
 void Nocli_Init(struct Nocli *nocli) { PromptReset(nocli); }
 
+NOCLI_ATTRIBUTE_ACCESS(read_only, 2, 3)
 void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
   struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
   char *const buffer = ctx->buffer;

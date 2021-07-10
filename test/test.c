@@ -3,7 +3,10 @@
 //
 // Run some tests on nocli.
 //
+#define _GNU_SOURCE // for asprintf
+
 #include "nocli.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -142,6 +145,115 @@ static void test_command_call(void) {
   PRV_COMPARE_MOCK(NO_COMMANDS_STRING);
 }
 
+static void print_args(int argc, char **argv) {
+  if (argc > 1) {
+    argc--;
+    argv++;
+    mock_output("\n", 1);
+    while (argc--) {
+      char *ptr;
+      int len = asprintf(&ptr, "%s\n", *argv++);
+
+      mock_output(ptr, len);
+
+      free(ptr);
+    }
+  }
+}
+
+static void test_arg_splitting(void) {
+  // setup
+  mock_output_buffer_idx = 0;
+  struct NocliCommand commands[] = {{
+      .name = "print_args",
+      .function = print_args,
+      .help = "print_args help",
+  }};
+  struct NocliPrivate nocli_private;
+  struct Nocli nocli_ctx = {
+      .output_stream = mock_output,
+      .command_table = commands,
+      .command_table_length = sizeof(commands) / sizeof(commands[0]),
+      .prefix_string = "nocli $",
+      .echo_on = true,
+      .private = &nocli_private,
+  };
+
+  // some splits
+  struct testvec {
+    char *name;
+    char command_string[1024];
+    char expected_response_string[1024];
+  } testvec[] = {
+#if NOCLI_QUOTED_ARGS_SUPPORT
+    {
+        .name = "test_quoted_splits",
+        .command_string = "print_args \" 1' '\" \"'2  \n",
+        .expected_response_string = NOCLI_CONFIG_ENDLINE_STRING
+        "nocli $"
+        "print_args \" 1' '\" \"'2  "
+        "\n"
+        " 1' '\n"
+        "'2  "
+        "\n" NOCLI_CONFIG_ENDLINE_STRING "nocli $",
+
+    },
+    {
+        .name = "test_quoted_splits",
+        .command_string = "print_args 0 1 2 3 4 5 6 7 8 \" \n",
+        .expected_response_string = NOCLI_CONFIG_ENDLINE_STRING
+        "nocli $"
+        "print_args 0 1 2 3 4 5 6 7 8 \" "
+        "\n"
+        "0\n"
+        "1\n"
+        "2\n"
+        "3\n"
+        "4\n"
+        "5\n"
+        "6\n"
+        "7\n"
+        "8\n" NOCLI_CONFIG_ENDLINE_STRING "nocli $",
+    },
+    {
+        .name = "test_quoted_splits",
+        .command_string = "print_args 0 1 2 3 4 5 6 7 8 \"'\n",
+        .expected_response_string = NOCLI_CONFIG_ENDLINE_STRING
+        "nocli $"
+        "print_args 0 1 2 3 4 5 6 7 8 \"'"
+        "\n"
+        "0\n"
+        "1\n"
+        "2\n"
+        "3\n"
+        "4\n"
+        "5\n"
+        "6\n"
+        "7\n"
+        "8\n" NOCLI_CONFIG_ENDLINE_STRING "nocli $",
+    },
+#endif
+    {
+        .name = "test_normal_splits",
+        .command_string = "print_args one  two   three   \n",
+        .expected_response_string = NOCLI_CONFIG_ENDLINE_STRING
+        "nocli $"
+        "print_args one  two   three   \n"
+        "one\n"
+        "two\n"
+        "three\n" NOCLI_CONFIG_ENDLINE_STRING "nocli $",
+    },
+  };
+
+  for (size_t i = 0; i < sizeof(testvec) / sizeof(*testvec); i++) {
+    mock_output_buffer_idx = 0;
+    Nocli_Init(&nocli_ctx);
+    Nocli_Feed(&nocli_ctx, testvec[i].command_string,
+               strlen(testvec[i].command_string));
+    PRV_COMPARE_MOCK(testvec[i].expected_response_string);
+  }
+}
+
 static void test_toggling_echo(void) {
   struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
@@ -232,5 +344,6 @@ int main(int argc, char **argv) {
   test_nocli_prompt();
   test_command_call();
   test_toggling_echo();
+  test_arg_splitting();
   test_help();
 }

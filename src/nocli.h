@@ -40,6 +40,19 @@
 #define NOCLI_CONFIG_HELP_COMMAND (1)
 #endif
 
+// Support for quoted args, eg "arg with spaces" etc.
+// Adds approximately 80 bytes
+#if !defined(NOCLI_QUOTED_ARGS_SUPPORT)
+#define NOCLI_QUOTED_ARGS_SUPPORT (1)
+#endif
+
+#if !defined(__clang__) && (__GNUC__ >= 11)
+#define NOCLI_ATTRIBUTE_ACCESS(mode_, ref_index_, size_index_)                 \
+  __attribute__((access(mode_, ref_index_, size_index_)))
+#else
+#define NOCLI_ATTRIBUTE_ACCESS(mode_, ref_index_, size_index_)
+#endif
+
 // Command structure
 struct NocliCommand {
   const char *name;                        // command name string, eg "cd"
