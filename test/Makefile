@@ -26,6 +26,12 @@ CFLAGS += \
 
 endif
 
+ifneq ($(filter gcc,$(shell $(CC) --version )),)
+CFLAGS += \
+  -fanalyzer \
+
+endif
+
 CPROFFLAGS = -coverage
 LDFLAGS +=
 
