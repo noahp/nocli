@@ -29,9 +29,11 @@ docker run --rm -v "$(pwd)":/mnt/workspace -t "$DOCKER_IMAGE_NAME" bash -c '
 
     # build for cortex-m4
     git clean -dxf
+    make -f test/Makefile_cortexm4.mk
+    git clean -dxf
     CFLAGS="-DNOCLI_CONFIG_HELP_COMMAND=0" make -f test/Makefile_cortexm4.mk
     git clean -dxf
-    make -f test/Makefile_cortexm4.mk
+    CFLAGS="-DNOCLI_CONFIG_HELP_COMMAND=0 -DNOCLI_QUOTED_ARGS_SUPPORT=0" make -f test/Makefile_cortexm4.mk
 
     # compilation + unit tests; default is gcc-11
     export CC=gcc-11

@@ -26,6 +26,7 @@ CFLAGS += \
 
 endif
 
+# only enable gcc static analyzer on gcc
 ifneq ($(filter gcc,$(shell $(CC) --version )),)
 CFLAGS += \
   -fanalyzer \
