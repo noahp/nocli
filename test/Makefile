@@ -23,6 +23,7 @@ ifeq ($(DISABLE_ASAN),)
 CFLAGS += \
   -fsanitize=address \
   -fsanitize=undefined \
+  -fno-sanitize-recover=all
 
 endif
 
@@ -48,7 +49,7 @@ TEST_TARGETS := test1 test2
 $(BUILD_DIR)/test2/test-executable: CFLAGS+=-DNOCLI_QUOTED_ARGS_SUPPORT=0
 
 # all of the build targets, used to generate compilation rules below
-BUILD_TARGETS := $(TEST_TARGETS) example
+BUILD_TARGETS := $(TEST_TARGETS) example fuzzing
 
 OBJECTS = $(SOURCES:%.c=%.o)
 
@@ -106,6 +107,14 @@ endef
 
 $(foreach target,$(BUILD_TARGETS),$(eval $(call define_compile_rules,$(target))))
 
+# fuzz testing target; use the clang compiler and append a few additional CFLAGS
+.PHONY: fuzz
+fuzz: CC = clang
+fuzz: CFLAGS += -DFUZZING -fsanitize-address-use-after-scope -fsanitize=address,undefined,fuzzer
+fuzz: $(BUILD_DIR)/fuzzing/example
+	./$(BUILD_DIR)/fuzzing/example
+
+.PHONY: clean
 clean:
 	-rm -rf build
 

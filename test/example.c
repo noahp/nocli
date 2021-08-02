@@ -7,16 +7,23 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(FUZZING)
+#define PRINTF(...)
+#else
+#define PRINTF printf
+#endif
+
 static void arg_count(int argc, char **argv) {
-  (void)argv;
-  printf("Arg count: %d\n", argc - 1);
+  (void)argc, (void)argv;
+  PRINTF("Arg count: %d\n", argc - 1);
 }
 
 // forward declaration, this function modifies the context
 static void change_prompt(int argc, char **argv);
 
 static void output(const char *data, size_t length) {
-  printf("%.*s", (int)length, data);
+  (void)data, (void)length;
+  PRINTF("%.*s", (int)length, data);
 }
 
 // setup context
@@ -55,22 +62,33 @@ static void change_prompt(int argc, char **argv) {
     memcpy(prefix_string, argv[1], len);
     prefix_string[len] = '\0';
     nocli_ctx.prefix_string = prefix_string;
-    printf("prompt updated!\n");
+    PRINTF("prompt updated!\n");
   }
 }
 
+#if !defined(FUZZING)
 int main(int argc, char **argv) {
   (void)argc, (void)argv;
-  char ch;
+  int input;
 
   Nocli_Init(&nocli_ctx);
 
   // feed characters from getchar. capture ctrl-c.
   // turn off input buffering
   setvbuf(stdin, NULL, _IONBF, 0);
-  while ((ch = (char)getchar()) != 3) {
+  while ((input = getchar()) != EOF) {
+    char ch = (char)input;
     Nocli_Feed(&nocli_ctx, &ch, sizeof(ch));
   }
 
   return 0;
 }
+#else // fuzzing
+int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  Nocli_Init(&nocli_ctx);
+  Nocli_Feed(&nocli_ctx, (const char *)Data, Size);
+
+  return 0;
+}
+
+#endif

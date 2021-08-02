@@ -92,7 +92,7 @@ static int argsplit(char *buffer, int argv_count, char **argv) {
         // left, to elide the quote
         DEBUG_PRINTF(">> close quote '%c'\n", *buffer);
         open_quote = 0;
-        memmove(buffer, buffer + 1, strlen(buffer) + 1);
+        memmove(buffer, buffer + 1, strlen(buffer));
         buffer--;
       } else if (!open_quote) {
         DEBUG_PRINTF(">> open quote '%c'\n", *buffer);

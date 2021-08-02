@@ -39,8 +39,12 @@ docker run --rm -v "$(pwd)":/mnt/workspace -t "$DOCKER_IMAGE_NAME" bash -c '
     export CC=gcc-11
     export GCOV=gcov-11
 
+    # build example app
     git clean -dxf
     make -f test/Makefile
+    # run libfuzzer detected crashes through for regression
+    (for crashfile in $(find test/corpus/ -type f) ; do ./build/example/example < $crashfile || exit -1 ; done)
+
     git clean -dxf
     CFLAGS="-Weverything -Wno-error=reserved-id-macro -Wno-error=padded" CC=clang-12 NO_LCOV=1 make -f test/Makefile
     git clean -dxf

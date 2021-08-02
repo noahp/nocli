@@ -44,7 +44,12 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $@.d
 
 LIB = $(BUILD_DIR)/libnocli_example.a
 
+.PHONY: all
 all: $(LIB)
+
+.PHONY: minimal
+minimal: CFLAGS += -DNOCLI_CONFIG_HELP_COMMAND=0 -DNOCLI_QUOTED_ARGS_SUPPORT=0
+minimal: $(LIB)
 
 $(LIB): $(OBJECTS)
 	$(info Linking $@)
