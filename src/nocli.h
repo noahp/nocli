@@ -12,11 +12,11 @@
 // `nocli_config.h`.
 //
 #pragma once
-#include "nocli_config.h"
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "nocli_config.h"
 
 // Maximum command length
 #if !defined(NOCLI_CONFIG_MAX_COMMAND_LENGTH)
@@ -47,18 +47,18 @@
 #endif
 
 #if !defined(__clang__) && (__GNUC__ >= 11)
-#define NOCLI_ATTRIBUTE_ACCESS(mode_, ref_index_, size_index_)                 \
-  __attribute__((access(mode_, ref_index_, size_index_)))
+#define NOCLI_ATTRIBUTE_ACCESS(mode_, ref_index_, size_index_) \
+	__attribute__((access(mode_, ref_index_, size_index_)))
 #else
 #define NOCLI_ATTRIBUTE_ACCESS(mode_, ref_index_, size_index_)
 #endif
 
 // Command structure
 struct NocliCommand {
-  const char *name;                        // command name string, eg "cd"
-  void (*function)(int argc, char **argv); // command function
+	const char *name;                         // command name string, eg "cd"
+	void (*function)(int argc, char **argv);  // command function
 #if NOCLI_CONFIG_HELP_COMMAND
-  const char *help; // help string
+	const char *help;  // help string
 #endif
 };
 
@@ -71,22 +71,22 @@ struct NocliCommand {
 
 #define NOCLI_PRIVATE_CONTEXT_SIZE NOCLI_CONFIG_MAX_COMMAND_LENGTH
 struct NocliPrivate {
-  uint8_t private[NOCLI_PRIVATE_CONTEXT_SIZE];
+	uint8_t private[NOCLI_PRIVATE_CONTEXT_SIZE];
 };
 
 struct Nocli {
-  // 1. private context space
-  struct NocliPrivate *private;
+	// 1. private context space
+	struct NocliPrivate *private;
 
-  // 2. configured prior to setup
-  void (*output_stream)(const char *, size_t); // nocli uses this for stdout
+	// 2. configured prior to setup
+	void (*output_stream)(const char *, size_t);  // nocli uses this for stdout
 
-  // 3. reconfiguratble at runtime
-  const struct NocliCommand *command_table; // table of commands
-  size_t
-      command_table_length; // length of command table; must match command table
-  char *prefix_string;      // leading string for prompt (eg "$ ")
-  bool echo_on;             // enable or disable echo
+	// 3. reconfiguratble at runtime
+	const struct NocliCommand *command_table;  // table of commands
+	size_t command_table_length;  // length of command table; must match command
+								  // table
+	char *prefix_string;          // leading string for prompt (eg "$ ")
+	bool echo_on;                 // enable or disable echo
 };
 
 // Initialize context.
