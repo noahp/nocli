@@ -11,7 +11,7 @@ Minimal dependencies: just string.h.
 
 ## Features
 
-- low footprint; the library is ~**600 bytes** `.text` (~**335 bytes** under
+- low footprint; the library is \~**600 bytes** `.text` (\~**335 bytes** under
   minimal configuration), and uses a (configurable) 128 byte buffer (`.bss`) and
   24 byte (`.data`) context structure.
 
