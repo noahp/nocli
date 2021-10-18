@@ -11,28 +11,65 @@ Minimal dependencies: just string.h.
 
 ## Features
 
-* low footprint; the library is ~**600 bytes** `.text` (~**335 bytes** under
+- low footprint; the library is ~**600 bytes** `.text` (~**335 bytes** under
   minimal configuration), and uses a (configurable) 128 byte buffer (`.bss`) and
-  24 byte (`.data`) context structure. a minimal integration could be similar to
-  the example application, which clocks in at:
+  24 byte (`.data`) context structure.
 
-   ```bash
-   ❯ make -f test/Makefile_cortexm4.mk
-   Compiling nocli.c
-   Compiling test/example.c
-   Linking build/libnocli_example.a
-      text    data     bss     dec     hex filename
-       582       0       0     582     246 nocli.o (ex build/libnocli_example.a)
-       310      24     153     487     1e7 example.o (ex build/libnocli_example.a)
-       892      24     153    1069     42d (TOTALS)
-   ```
+  ```bash
+  ❯ arm-none-eabi-gcc -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Os -Itest -c nocli.c -o nocli.o
+  ❯ arm-none-eabi-size nocli.o
+     text    data     bss     dec     hex filename
+      582       0       0     582     246 nocli.o
+  ```
 
-* incremental parsing of input stream
-* static memory usage
+- incremental parsing of input stream
+- static memory usage
+- supports doubly- and singly- quoted args (can be disabled to save ~100 bytes)
+- 100% test coverage
+- fuzz tested via LibFuzzer
 
 Possible future features, if I need them:
 
-* UNIMPLEMENTED optional tab completion or history?
+- UNIMPLEMENTED optional tab completion or history?
+
+## Usage
+
+### Example
+
+See [`test/example.c`](test/example.c) for an example that runs on host.
+
+You can try the example by building it and running it:
+
+```bash
+# build
+❯ make -f test/Makefile
+Compiling nocli.c
+Compiling test/example.c
+Linking build/example/example
+
+# run
+❯ ./build/example/example
+
+nocli$ help
+
+?
+help
+count-args      print number of args passed
+change-prompt   set prompt to new string
+nocli$ count-args 1 2 3
+Arg count: 3
+
+nocli$
+```
+
+### Integration
+
+API is documented in [`nocli.h`](nocli.h). There's only two functions used:
+
+1. initialize the library: `void Nocli_Init(struct Nocli *nocli);`
+   > this includes a callback for outputting data and the table of commands.
+2. pass any amount of data: `void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length);`
+   > commands are executed within this function, so be sure to call it in a safe context
 
 ## libfuzzer crashes
 
