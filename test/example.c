@@ -3,7 +3,7 @@
 //
 // Example usage of nocli.
 //
-#include "../src/nocli.h"
+#include "../nocli.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -17,7 +17,7 @@ SIZE = $(shell $(CC) --print-prog-name=size)
 # relative to repo root
 BUILD_DIR = build
 
-INC = src test
+INC = ../ test
 CFLAGS += \
   -Os \
   -mcpu=cortex-m4 \
@@ -33,7 +33,7 @@ CFLAGS += \
 
 # relative to repo root
 SOURCES = \
-  src/nocli.c \
+  nocli.c \
   test/example.c \
 
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(SOURCES:.c=.o))

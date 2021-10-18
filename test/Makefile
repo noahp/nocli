@@ -8,7 +8,7 @@ BUILD_DIR = build
 
 CC ?= gcc
 GCOV ?= gcov
-INC = src test
+INC = test
 INC_PARAMS = $(INC:%=-I%)
 CFLAGS += \
   -O0 \
@@ -39,7 +39,7 @@ LDFLAGS +=
 
 # relative to repo root
 SOURCES = \
-  src/nocli.c \
+  nocli.c \
 
 # to test multiple configurations, we build multiple copies of the test
 # executable with different compiler flags
@@ -70,7 +70,9 @@ NO_LCOV ?= 0
 test: CFLAGS+=$(CPROFFLAGS)
 test: $(TEST_TARGETS:%=$(BUILD_DIR)/%/coverage.info)
 ifeq ($(NO_LCOV),0)
-	lcov --rc lcov_branch_coverage=1 $(addprefix -a ,$^) -o build/lcov.info -q
+	lcov --rc lcov_branch_coverage=1 $(addprefix --add-tracefile ,$^) -q -o build/lcov.info.all
+# filter out any test files
+	lcov --rc lcov_branch_coverage=1 --remove build/lcov.info.all -q '**/test/**' -o build/lcov.info
 	genhtml --branch-coverage --highlight --legend -o test_coverage \
 		-t "coverage" --num-spaces 4 build/lcov.info -o \
 		$(BUILD_DIR)/test_coverage/
@@ -83,7 +85,7 @@ $(BUILD_DIR)/%/coverage.info: $(BUILD_DIR)/%/test-executable
 	./$^
 	$(info Generating coverage file $@)
 	lcov --gcov-tool $(GCOV) --rc lcov_branch_coverage=1 \
-		--directory $(dir $<)/src -c -o $@ -q
+		--directory $(dir $<) -c -o $@ -q
 
 OBJS = $(addprefix $(BUILD_DIR)/%/,$(OBJECTS))
 

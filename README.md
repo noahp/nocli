@@ -17,19 +17,22 @@ Minimal dependencies: just string.h.
   the example application, which clocks in at:
 
    ```bash
-    ❯ make -f test/Makefile_cortexm4.mk
-   Compiling src/nocli.c
+   ❯ make -f test/Makefile_cortexm4.mk
+   Compiling nocli.c
    Compiling test/example.c
    Linking build/libnocli_example.a
       text    data     bss     dec     hex filename
-      582       0       0     582     246 nocli.o (ex build/libnocli_example.a)
-      310      24     153     487     1e7 example.o (ex build/libnocli_example.a)
-      892      24     153    1069     42d (TOTALS)
+       582       0       0     582     246 nocli.o (ex build/libnocli_example.a)
+       310      24     153     487     1e7 example.o (ex build/libnocli_example.a)
+       892      24     153    1069     42d (TOTALS)
    ```
 
 * incremental parsing of input stream
 * static memory usage
-* TODO optional tab completion or history?
+
+Possible future features, if I need them:
+
+* UNIMPLEMENTED optional tab completion or history?
 
 ## libfuzzer crashes
 

@@ -5,7 +5,7 @@
 //
 #define _GNU_SOURCE // for asprintf
 
-#include "nocli.h"
+#include "../nocli.h"
 
 #include <stdio.h>
 #include <stdlib.h>
