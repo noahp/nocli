@@ -16,10 +16,10 @@ Minimal dependencies: just string.h.
   24 byte (`.data`) context structure.
 
   ```bash
-  ❯ arm-none-eabi-gcc -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Os -Itest -c nocli.c -o nocli.o
+  ❯ arm-none-eabi-gcc -DNOCLI_RUNTIME_ECHO_CONTROL=0 -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Os -Itest -c nocli.c -o nocli.o
   ❯ arm-none-eabi-size nocli.o
-     text    data     bss     dec     hex filename
-      582       0       0     582     246 nocli.o
+      text    data     bss     dec     hex filename
+      562       0       0     562     232 nocli.o
   ```
 
 - incremental parsing of input stream
@@ -83,3 +83,25 @@ run through the library in ci to catch regressions.
 ## License
 
 WTFPL (http://www.wtfpl.net/) or public domain, whichever you prefer.
+
+---
+
+## Alternatives!
+
+This library conflates two operations:
+
+- line editing
+- command line argument parsing
+
+There are a LOT of alternatives. Here's some commonly used ones:
+
+### Line editing
+
+- readline
+- linenoise
+
+### Argument parsing
+
+- getopt
+- argp
+- argparse3

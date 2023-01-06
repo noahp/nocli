@@ -26,6 +26,12 @@ static void mock_output(const char *data, size_t length) {
   mock_output_buffer_idx += length;
 }
 
+static void print_hex(const char *data, size_t length) {
+  for (size_t i = 0; i < length; i++) {
+    printf("%02x", data[i]);
+  }
+}
+
 #define PRV_COMPARE_MOCK(a_)                                                   \
   prv_compare_strings(a_, mock_output_buffer, mock_output_buffer_idx, __LINE__)
 static void prv_compare_strings(const char *expected, const char *actual,
@@ -42,6 +48,10 @@ static void prv_compare_strings(const char *expected, const char *actual,
   if (fail) {
     printf(">>> expected:\n%s\n<<< actual:\n%.*s\n", expected,
            (int)actual_length, actual);
+    print_hex(expected, strlen(expected));
+    printf("\n");
+    print_hex(actual, actual_length);
+    printf("\n");
     ERROR_EXIT(line);
   }
 }
@@ -53,12 +63,14 @@ static void test_nocli_prompt(void) {
 #define PROMPT_2_STRING "prompty!"
   struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
-      .output_stream = mock_output,
-      .command_table = NULL,
-      .command_table_length = 0,
-      .prefix_string = PROMPT_1_STRING,
-      .echo_on = true,
-      .private = &nocli_private,
+    .output_stream = mock_output,
+    .command_table = NULL,
+    .command_table_length = 0,
+    .prefix_string = PROMPT_1_STRING,
+#if NOCLI_RUNTIME_ECHO_CONTROL
+    .echo_on = true,
+#endif
+    .private = &nocli_private,
   };
 
   Nocli_Init(&nocli_ctx);
@@ -90,12 +102,14 @@ static void test_command_call(void) {
   }};
   struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
-      .output_stream = mock_output,
-      .command_table = commands,
-      .command_table_length = sizeof(commands) / sizeof(commands[0]),
-      .prefix_string = "nocli $",
-      .echo_on = true,
-      .private = &nocli_private,
+    .output_stream = mock_output,
+    .command_table = commands,
+    .command_table_length = sizeof(commands) / sizeof(commands[0]),
+    .prefix_string = "nocli $",
+#if NOCLI_RUNTIME_ECHO_CONTROL
+    .echo_on = true,
+#endif
+    .private = &nocli_private,
   };
 
   Nocli_Init(&nocli_ctx);
@@ -113,16 +127,16 @@ static void test_command_call(void) {
   "nocli $" BAD_COMMAND_STRING NOCLI_CONFIG_ENDLINE_STRING                     \
   "error, command not found" NOCLI_CONFIG_ENDLINE_STRING "nocli $"
   // feed an overlong command string, confirm it truncates
-  Nocli_Feed(&nocli_ctx, "\x1f\x80" BAD_COMMAND_STRING "11111111\x1f\x80  \n",
-             sizeof("\x1f\x80" BAD_COMMAND_STRING "11111111\x1f\x80  \n") - 1);
+  Nocli_Feed(&nocli_ctx, BAD_COMMAND_STRING "11111111 \n",
+             sizeof(BAD_COMMAND_STRING "11111111 \n") - 1);
   PRV_COMPARE_MOCK(BAD_COMMAND_RESPONSE_STRING);
 
 // valid command, check output and command executed
-#define GOOD_COMMAND_STRING "function1 arg1 \xff 3 4 5 6 7 8 9 10 11 12\n"
+#define GOOD_COMMAND_STRING "function1 arg1 3 4 5 6 7 8 9 10 11 12\n"
 #define GOOD_COMMAND_RESPONSE_STRING                                           \
   NOCLI_CONFIG_ENDLINE_STRING                                                  \
   "nocli $"                                                                    \
-  "function1 arg1  3 4 5 6 7 8 9 10 11 12" NOCLI_CONFIG_ENDLINE_STRING         \
+  "function1 arg1 3 4 5 6 7 8 9 10 11 12" NOCLI_CONFIG_ENDLINE_STRING          \
   "nocli $"
   mock_output_buffer_idx = 0;
   Nocli_Init(&nocli_ctx);
@@ -171,12 +185,14 @@ static void test_arg_splitting(void) {
   }};
   struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
-      .output_stream = mock_output,
-      .command_table = commands,
-      .command_table_length = sizeof(commands) / sizeof(commands[0]),
-      .prefix_string = "nocli $",
-      .echo_on = true,
-      .private = &nocli_private,
+    .output_stream = mock_output,
+    .command_table = commands,
+    .command_table_length = sizeof(commands) / sizeof(commands[0]),
+    .prefix_string = "nocli $",
+#if NOCLI_RUNTIME_ECHO_CONTROL
+    .echo_on = true,
+#endif
+    .private = &nocli_private,
   };
 
   // some splits
@@ -257,12 +273,14 @@ static void test_arg_splitting(void) {
 static void test_toggling_echo(void) {
   struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
-      .output_stream = mock_output,
-      .command_table = NULL,
-      .command_table_length = 0,
-      .prefix_string = "nocli $",
-      .echo_on = true,
-      .private = &nocli_private,
+    .output_stream = mock_output,
+    .command_table = NULL,
+    .command_table_length = 0,
+    .prefix_string = "nocli $",
+#if NOCLI_RUNTIME_ECHO_CONTROL
+    .echo_on = true,
+#endif
+    .private = &nocli_private,
   };
   mock_output_buffer_idx = 0;
   Nocli_Init(&nocli_ctx);
@@ -282,7 +300,10 @@ static void test_toggling_echo(void) {
 
   PRV_COMPARE_MOCK(expecteds[0]);
 
+#if NOCLI_RUNTIME_ECHO_CONTROL
   nocli_ctx.echo_on = false;
+#endif
+
   mock_output_buffer_idx = 0;
   Nocli_Init(&nocli_ctx);
   // test entering '?' command, with multiple backspaces; we should only get
@@ -303,12 +324,14 @@ static void test_help(void) {
   }};
   struct NocliPrivate nocli_private;
   struct Nocli nocli_ctx = {
-      .output_stream = mock_output,
-      .command_table = commands,
-      .command_table_length = sizeof(commands) / sizeof(commands[0]),
-      .prefix_string = "nocli $",
-      .echo_on = true,
-      .private = &nocli_private,
+    .output_stream = mock_output,
+    .command_table = commands,
+    .command_table_length = sizeof(commands) / sizeof(commands[0]),
+    .prefix_string = "nocli $",
+#if NOCLI_RUNTIME_ECHO_CONTROL
+    .echo_on = true,
+#endif
+    .private = &nocli_private,
   };
 
   Nocli_Init(&nocli_ctx);

@@ -49,7 +49,9 @@ static struct Nocli nocli_ctx = {
     .command_table = cmdlist,
     .command_table_length = sizeof(cmdlist) / sizeof(cmdlist[0]),
     .prefix_string = "nocli$ ",
+#if NOCLI_RUNTIME_ECHO_CONTROL
     .echo_on = false,
+#endif
     .private = &nocli_private,
 };
 
