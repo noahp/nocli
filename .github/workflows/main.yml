@@ -7,20 +7,24 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/noahp/nocli:2023-01-06
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-    steps:
-      # checkout v2, with recursive submodule update
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
 
-      # build the Docker image we use to run the tests
+    steps:
+      - uses: actions/checkout@v3
+
+      # this should not be necessary! but git doesn't work without it
+      - name: Set git safe directory
+        run: |
+          git config --global --add safe.directory "${PWD}"
+
       - name: ci.sh
         run: |
           ./ci.sh
-          bash <(curl -s https://codecov.io/bash) -f build/lcov.info

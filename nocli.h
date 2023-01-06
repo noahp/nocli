@@ -46,6 +46,11 @@
 #define NOCLI_QUOTED_ARGS_SUPPORT (1)
 #endif
 
+// Disable runtime echo control; echo will be always enabled
+#if !defined(NOCLI_RUNTIME_ECHO_CONTROL)
+#define NOCLI_RUNTIME_ECHO_CONTROL (1)
+#endif
+
 #if !defined(__clang__) && (__GNUC__ >= 11)
 #define NOCLI_ATTRIBUTE_ACCESS(mode_, ref_index_, size_index_)                 \
   __attribute__((access(mode_, ref_index_, size_index_)))
@@ -86,7 +91,9 @@ struct Nocli {
   size_t
       command_table_length; // length of command table; must match command table
   char *prefix_string;      // leading string for prompt (eg "$ ")
-  bool echo_on;             // enable or disable echo
+#if NOCLI_RUNTIME_ECHO_CONTROL
+  bool echo_on; // enable or disable echo
+#endif
 };
 
 // Initialize context.

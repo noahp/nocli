@@ -10,8 +10,12 @@
 
 #define NOCLI_COMMAND_NOT_FOUND_STRING "error, command not found"
 
-// The below check works only if c_ is signed char; 127++ = -128, which is < 31
-#define NOCLI_PRINTABLE_CHAR(c_) (c_ > 31)
+// The below check is used to strip all non printable ascii characters- see 'man
+// ascii' for details. Note that this supports utf-8 and "extended-ascii"
+// encodings, but at the risk of potentially including non-printables in the
+// parsed argument strings. Without a glyph parser this is the best we can do.
+#define NOCLI_PRINTABLE_CHAR(c_) ((c_ > 31) && (c != 127))
+
 #define ARRAY_SIZE(obj_) (sizeof(obj_) / sizeof(*obj_))
 
 #if defined(DEBUG)
@@ -199,15 +203,12 @@ void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
   // process incoming data
   while (length > 0) {
     bool echo = false;
+    bool line_end = false;
 
-    char c = *input;
+    unsigned char c = (unsigned char)*input;
     if ((c == '\n') || (c == '\r')) {
-      // line end reached, process command
-      if (buffer_ptr > buffer) {
-        ProcessCommand(nocli, buffer);
-      }
-      PromptReset(nocli);
-      buffer_ptr = buffer;
+      // line end reached
+      line_end = true;
     }
     // some terminals will map backspace to delete, 127
     else if ((c == '\b') || (c == 127)) {
@@ -226,8 +227,21 @@ void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
     }
 
     // echo is enabled and this byte should be echoed
-    if (echo && nocli->echo_on) {
+    if (echo
+#if NOCLI_RUNTIME_ECHO_CONTROL
+        && nocli->echo_on
+#endif
+    ) {
       nocli->output_stream(input, 1);
+    }
+
+    // if we reached the end of the line, process it
+    if (line_end) {
+      if (buffer_ptr > buffer) {
+        ProcessCommand(nocli, buffer);
+      }
+      PromptReset(nocli);
+      buffer_ptr = buffer;
     }
 
     // advance to next input byte
