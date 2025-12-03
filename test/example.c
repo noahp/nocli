@@ -43,7 +43,6 @@ static const struct NocliCommand cmdlist[] = {
 #endif
     },
 };
-static struct NocliPrivate nocli_private;
 static struct Nocli nocli_ctx = {
     .output_stream = output,
     .command_table = cmdlist,
@@ -52,7 +51,6 @@ static struct Nocli nocli_ctx = {
 #if NOCLI_RUNTIME_ECHO_CONTROL
     .echo_on = false,
 #endif
-    .private = &nocli_private,
 };
 
 static void change_prompt(int argc, char **argv) {

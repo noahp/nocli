@@ -13,7 +13,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/noahp/nocli:2023-01-06
+      image: ghcr.io/noahp/nocli:2025-12-02
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -27,4 +27,4 @@ jobs:
 
       - name: ci.sh
         run: |
-          ./ci.sh
+          ./tools/ci.sh

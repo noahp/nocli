@@ -70,18 +70,15 @@ struct NocliCommand {
 // Nocli context, intantiated by calling code. All the memory used by nocli
 // exists here.
 //  Fields are divided into 3 classes:
-//  1. internally managed; obfuscated block
+//  1. internal context
 //  2. configured prior to setup
 //  3. configured prior to setup; reconfigurable at runtime
 
-#define NOCLI_PRIVATE_CONTEXT_SIZE NOCLI_CONFIG_MAX_COMMAND_LENGTH
-struct NocliPrivate {
-  uint8_t private[NOCLI_PRIVATE_CONTEXT_SIZE];
-};
-
 struct Nocli {
-  // 1. private context space
-  struct NocliPrivate *private;
+  // 1. internal context
+  struct NocliPrivCtx {
+    char buffer[NOCLI_CONFIG_MAX_COMMAND_LENGTH];
+  } ctx;
 
   // 2. configured prior to setup
   void (*output_stream)(const char *, size_t); // nocli uses this for stdout

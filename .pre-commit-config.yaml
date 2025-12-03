@@ -6,13 +6,13 @@ repos:
       # keep this before clang-tidy, it generates compile_commands.json for it
       - id: compiledb
         name: compiledb
-        entry: compiledb
+        entry: uvx --from compiledb==0.10.7 compiledb
         language: system
         args: [--overwrite, make, -f, test/Makefile, -n]
         files: \.(c|cc|cxx|cpp|h|hpp|hxx|m)$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files # prevents giant files from being committed.
       - id: check-case-conflict # checks for files that would conflict in case-insensitive filesystems.
@@ -34,33 +34,32 @@ repos:
       - id: trailing-whitespace # trims trailing whitespace.
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0-alpha.4
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         files: \.(js|ts|jsx|tsx|css|less|html|json|markdown|md|yaml|yml)$
         exclude: .vscode
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.17.1
+    rev: 0.35.0
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
 
-  - repo: https://github.com/psf/black
-    rev: 22.12.0
-    hooks:
-      - id: black
-
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.11.4
-    hooks:
-      - id: isort
-        args: [--profile=black]
-
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.8.0.4
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
+
+  # local runner for shfmt
+  - repo: local
+    hooks:
+      - id: shfmt
+        name: shfmt
+        entry: shfmt
+        language: unsupported
+        args: [--simplify, --write]
+        files: \.sh$
 
   - repo: https://github.com/pocc/pre-commit-hooks
     rev: v1.3.5
@@ -78,4 +77,7 @@ repos:
             --suppress=unmatchedSuppression,
             --suppress=missingInclude,
             --suppress=ConfigurationNotChecked,
+            --suppress=missingIncludeSystem,
+            --inline-suppr,
           ]
+        files: nocli.c
