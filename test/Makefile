@@ -3,6 +3,8 @@
 
 .SILENT:
 
+.SECONDARY:
+
 # relative to repo root
 BUILD_DIR = build
 
@@ -70,10 +72,10 @@ NO_LCOV ?= 0
 test: CFLAGS+=$(CPROFFLAGS)
 test: $(TEST_TARGETS:%=$(BUILD_DIR)/%/coverage.info)
 ifeq ($(NO_LCOV),0)
-	lcov --rc lcov_branch_coverage=1 $(addprefix --add-tracefile ,$^) -q -o build/lcov.info.all
+	lcov --rc branch_coverage=1 $(addprefix --add-tracefile ,$^) -q -o build/lcov.info.all
 # filter out any test files
-	lcov --rc lcov_branch_coverage=1 --remove build/lcov.info.all -q '**/test/**' -o build/lcov.info
-	genhtml --branch-coverage --highlight --legend -o test_coverage \
+	lcov --rc branch_coverage=1 --remove build/lcov.info.all -q '**/test/**' -o build/lcov.info
+	genhtml --branch-coverage --legend -o test_coverage \
 		-t "coverage" --num-spaces 4 build/lcov.info -o \
 		$(BUILD_DIR)/test_coverage/
 	@echo See coverage output in file://$(abspath $(BUILD_DIR)/test_coverage/index.html)
@@ -84,7 +86,7 @@ $(BUILD_DIR)/%/coverage.info: $(BUILD_DIR)/%/test-executable
 	$(info Running test...)
 	./$^
 	$(info Generating coverage file $@)
-	lcov --gcov-tool $(GCOV) --rc lcov_branch_coverage=1 \
+	lcov --gcov-tool $(GCOV) --rc branch_coverage=1 \
 		--directory $(dir $<) -c -o $@ -q
 
 OBJS = $(addprefix $(BUILD_DIR)/%/,$(OBJECTS))

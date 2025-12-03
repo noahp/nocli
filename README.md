@@ -19,7 +19,7 @@ Minimal dependencies: just string.h.
   ❯ arm-none-eabi-gcc -DNOCLI_RUNTIME_ECHO_CONTROL=0 -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Os -Itest -c nocli.c -o nocli.o
   ❯ arm-none-eabi-size nocli.o
       text    data     bss     dec     hex filename
-      562       0       0     562     232 nocli.o
+      546       0       0     546     222 nocli.o
   ```
 
 - incremental parsing of input stream

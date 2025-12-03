@@ -24,18 +24,9 @@
 #define DEBUG_PRINTF(...)
 #endif
 
-struct NocliPrivCtx {
-  // Active command buffer
-  char buffer[NOCLI_CONFIG_MAX_COMMAND_LENGTH];
-};
-// Size test below.. there's a better way I think
-// char boom[NOCLI_PRIVATE_CONTEXT_SIZE] = {[sizeof(struct NocliPrivCtx) - 1] =
-// 0};
-
 // Reset active buffer and print configured prompt
 static void PromptReset(struct Nocli *nocli) {
-  struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
-  ctx->buffer[0] = '\0';
+  nocli->ctx.buffer[0] = '\0';
 
   nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,
                        sizeof(NOCLI_CONFIG_ENDLINE_STRING) - 1);
@@ -44,10 +35,10 @@ static void PromptReset(struct Nocli *nocli) {
 
 #if NOCLI_CONFIG_HELP_COMMAND
 static void PrintHelp(struct Nocli *nocli) {
-  nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING
-                       "?" NOCLI_CONFIG_ENDLINE_STRING "help",
-                       strlen(NOCLI_CONFIG_ENDLINE_STRING
-                              "?" NOCLI_CONFIG_ENDLINE_STRING "help"));
+#define NOCLI_HELP_STRING                                                      \
+  NOCLI_CONFIG_ENDLINE_STRING "?" NOCLI_CONFIG_ENDLINE_STRING "help"
+  // cppcheck-suppress syntaxError
+  nocli->output_stream(NOCLI_HELP_STRING, strlen(NOCLI_HELP_STRING));
 
   for (size_t i = 0; i < nocli->command_table_length; i++) {
     nocli->output_stream(NOCLI_CONFIG_ENDLINE_STRING,
@@ -195,10 +186,9 @@ void Nocli_Init(struct Nocli *nocli) { PromptReset(nocli); }
 
 NOCLI_ATTRIBUTE_ACCESS(read_only, 2, 3)
 void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
-  struct NocliPrivCtx *ctx = (struct NocliPrivCtx *)(nocli->private);
-  char *const buffer = ctx->buffer;
+  char *const buffer = nocli->ctx.buffer;
   char *buffer_ptr = buffer + strlen(buffer);
-  char *const buffer_end = ctx->buffer + sizeof(ctx->buffer) - 1;
+  char *const buffer_end = nocli->ctx.buffer + sizeof(nocli->ctx.buffer) - 1;
 
   // process incoming data
   while (length > 0) {
@@ -221,7 +211,7 @@ void Nocli_Feed(struct Nocli *nocli, const char *input, size_t length) {
       // drop remaining characters if we're at the limit of what we can buffer
       if (NOCLI_PRINTABLE_CHAR(c) && (buffer_ptr < buffer_end)) {
         echo = true;
-        *buffer_ptr++ = *input;
+        *buffer_ptr++ = (char)c;
         *buffer_ptr = '\0';
       }
     }
